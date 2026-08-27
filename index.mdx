@@ -1,20 +1,23 @@
 ---
-title: "Introduction"
-description: "Welcome to your project"
+title: "What is PIO"
+description: "Player-intelligence optimisation for Unity games: the right action for each player at the decision points you define."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+PIO picks an action for each player at decision points you define, then learns from the valued events your game already sends. Tutorial pacing, first-level difficulty, offers: you define the decision points and the candidate actions, and PIO carries the learning loop.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+Your game asks for a decision, applies the returned action, and keeps playing. The events you track record how that choice worked out, and the reward is *derived* from them. Models start from a safe baseline and take traffic only as they prove themselves.
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
+    Six steps from install to a verified first decision.
+  </Card>
+  <Card title="Integration guide" icon="book-open" href="/integration/installation-and-versioning">
+    Every part of the SDK surface, one topic per page.
+  </Card>
+  <Card title="Integrate with your AI" icon="robot" href="/ai/integrate-with-your-ai">
+    Hand the integration to Claude Code or Cursor in one paste.
+  </Card>
+  <Card title="API reference" icon="code" href="/api-reference">
+    The full Unity SDK reference, generated from source.
+  </Card>
+</CardGroup>

@@ -1,0 +1,67 @@
+#!/usr/bin/env node
+// Brand guardrail for docs copy, ported from pio-web bin/brand-lint (ENG-377).
+// Enforced here: no em/en-dashes, no US spelling, in all .mdx copy.
+// The colour/Tailwind rules do not apply to MDX; docs.json is the token
+// source and is not scanned. Ratchets against config/brand_lint_baseline.txt
+// (regenerate with `bin/brand-lint --update`; the baseline should only shrink).
+const fs = require("fs");
+const path = require("path");
+const ROOT = path.join(__dirname, "..");
+process.chdir(ROOT);
+const BASELINE = "config/brand_lint_baseline.txt";
+
+const RULES = [
+  {
+    name: "dash",
+    regex: /[—–]/g,
+    hint: "no em/en-dashes: use a hyphen, colon, parentheses, or full stop",
+  },
+  {
+    name: "us-spelling",
+    regex: /\b(?:optimiz(?:e|es|ed|ing|ation)|behavior|analyze|modeling|customiz(?:e|ed|es|ing|ation))\b/gi,
+    hint: "use British spelling (optimise, behaviour, analyse, modelling, customise)",
+  },
+];
+
+const files = [];
+(function walk(dir) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.name.startsWith(".") || e.name === "node_modules") continue;
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walk(p);
+    else if (p.endsWith(".mdx")) files.push(path.relative(ROOT, p));
+  }
+})(ROOT);
+
+const sigs = new Set();
+for (const rule of RULES) {
+  for (const f of files.sort()) {
+    const text = fs.readFileSync(f, "utf8");
+    for (const m of text.matchAll(rule.regex)) sigs.add(`${rule.name}|${f}|${m[0]}`);
+  }
+}
+
+if (process.argv.includes("--update")) {
+  fs.mkdirSync("config", { recursive: true });
+  fs.writeFileSync(BASELINE, [...sigs].sort().join("\n") + "\n");
+  console.log(`brand-lint: baseline written (${sigs.size} entries) -> ${BASELINE}`);
+  process.exit(0);
+}
+
+const baseline = fs.existsSync(BASELINE)
+  ? new Set(fs.readFileSync(BASELINE, "utf8").split("\n").filter(Boolean))
+  : new Set();
+const fresh = [...sigs].filter((s) => !baseline.has(s)).sort();
+
+if (fresh.length === 0) {
+  console.log(`brand-lint: clean (${sigs.size} known violations baselined)`);
+  process.exit(0);
+}
+
+const hints = Object.fromEntries(RULES.map((r) => [r.name, r.hint]));
+console.error(`x brand-lint: ${fresh.length} new violation(s):`);
+for (const s of fresh) {
+  const [rule, file, match] = s.split("|");
+  console.error(`  ${file}: [${rule}] "${match}" -> ${hints[rule]}`);
+}
+process.exit(1);

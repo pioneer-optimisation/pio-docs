@@ -1,0 +1,7 @@
+/* Navbar lockup at the guidelines' header scale (~40px) instead of the
+   theme's 28px default. The !important is needed to beat the theme's h-7
+   utility class. Custom CSS is applied unconditionally by the local
+   preview; confirm it survives on the hosted plan at first deploy. */
+.nav-logo {
+  height: 4rem !important;
+}
