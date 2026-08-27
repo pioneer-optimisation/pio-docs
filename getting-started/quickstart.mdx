@@ -48,9 +48,11 @@ Ask for a decision at the decision point and apply the returned action. The fall
 
 {/* snippet:decision */}
 ```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
+// Offline, degraded, or timed out: the SDK serves the
+// FallbackAction you registered. No null checks, no defaults.
 var decision = await PIO.GetDecision("Tutorial");
 if (this == null) return; // Destroyed during the await: stop.
-var action = decision?.Action ?? "Short";
+var action = decision.Action;
 ```
 {/* /snippet:decision */}
 
