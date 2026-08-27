@@ -27,7 +27,7 @@ switch (d?.Source)
         break;
     case DecisionSource.Baseline:   // control group: Action is null by design
     default:                        // null result: tracking is disabled
-        Apply("Short");             // your existing default path
+        Apply(TutorialDefault);     // your safe default, named once
         break;
 }
 ```

@@ -19,6 +19,10 @@ Register every action definition your game requests, each with a fallback, then 
 
 {/* snippet:init */}
 ```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
+// Your safe default, named once: the registered fallback and the
+// baseline path both use it.
+const string tutorialDefault = "Short";
+
 var config = new PioConfig
 {
     ApiKey = apiKey,
@@ -26,9 +30,8 @@ var config = new PioConfig
     ProjectId = projectId,
     Actions = new Dictionary<string, ActionDef>
     {
-        // Every action def carries a fallback: the action your game
-        // uses when the backend cannot be reached in time.
-        ["Tutorial"] = new ActionDef { FallbackAction = "Short" },
+        // The fallback serves whenever the backend cannot answer.
+        ["Tutorial"] = new ActionDef { FallbackAction = tutorialDefault },
     },
 };
 
@@ -54,7 +57,7 @@ Ask at the decision point and apply the returned action. Failure handling is bui
 // existing default path.
 var decision = await PIO.GetDecision("Tutorial");
 if (this == null) return; // Destroyed during the await: stop.
-var action = decision.Action ?? "Short";
+var action = decision.Action ?? tutorialDefault;
 ```
 {/* /snippet:decision */}
 
