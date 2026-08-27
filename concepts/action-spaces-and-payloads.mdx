@@ -3,10 +3,14 @@ title: "Action spaces & payloads"
 description: "What an action is, and what your game receives."
 ---
 
-<Note>Under construction.</Note>
+## Action definitions
 
-Will cover:
+An action definition is one decision point with a fixed set of candidate actions: a `Tutorial` definition might offer `Short`, `Medium`, and `Long`. The model's job is choosing among those keys per player. Two defaults guard it: the dashboard's default action (served to the control group) and the code-registered `FallbackAction` (served when the backend is unreachable). They are usually the same safe choice.
 
-- Action definitions and candidate actions
-- Payload shape and versioning
-- Designing an action space that can grow
+Start small. A decision point with three to five meaningfully different actions learns faster than one with twenty near-duplicates, and the space can grow later.
+
+## Payloads
+
+Each action option can carry a payload: named, typed parameters (numbers, text, flags, arrays) edited in the dashboard and delivered with the decision. The model still chooses among the same option keys; the payload is opaque to training. That split is the point: the *shape* of the decision is fixed in code, while the numbers driving it are retuned server-side with no client release and no retraining.
+
+Payloads are versioned, and every client read degrades safely: a missing payload, key, or type mismatch returns your compiled-in default. [Decisions](/integration/decisions) shows the read patterns; the [API reference](/api-reference) documents the generated typed classes.

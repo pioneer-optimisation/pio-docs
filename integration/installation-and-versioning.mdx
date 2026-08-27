@@ -3,10 +3,30 @@ title: "Installation & versioning"
 description: "Install the SDK via UPM and pin an exact release."
 ---
 
-<Note>Under construction.</Note>
+## Requirements
 
-Will cover:
+- Unity 2022.3 LTS or newer.
+- UniTask, the SDK's one dependency, resolved via Git URL or the OpenUPM registry.
 
-- UPM install from the release URL, pinned to an exact tag
-- Version policy: pre-1.0, minor releases may include source-breaking changes, so always pin
-- Upgrading between releases and reading the changelog
+## Install
+
+Add both packages to `Packages/manifest.json`, mirroring the SDK's own sample project:
+
+```json
+{
+  "dependencies": {
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2.5.11",
+    "com.pioneeroptimisation.sdk": "https://github.com/pioneer-optimisation/pio-unity-sdk.git#v0.3.2"
+  }
+}
+```
+
+Confirm the package compiles and `using PIO;` resolves. The `Samples` tab of the Package Manager offers the Basic Integration sample, a working reference for every guide page here.
+
+## Pin an exact tag
+
+The SDK is pre-1.0: minor releases may include source-breaking changes, and binary compatibility is not guaranteed. Always pin an exact tag, never a branch. From 1.0, semver applies and the public surface becomes the compatibility baseline.
+
+## Upgrading
+
+Read the release notes, bump the tag, and recompile. If a release changes your project's payload schema surface, the Editor warns about schema drift; regenerate code constants (`PIO/Generate Code Constants`) to clear it.

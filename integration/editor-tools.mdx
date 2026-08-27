@@ -3,11 +3,26 @@ title: "Editor tools"
 description: "The PIO menu: wizard, simulator, diagnostics, codegen."
 ---
 
-<Note>Under construction.</Note>
+Everything lives under the `PIO` menu in the Unity menu bar.
 
-Will cover:
+## Setup Wizard
 
-- Setup Wizard and Verify Integration
-- Decision Simulator
-- Generated code constants for action and event keys
-- Diagnostics tools
+Generates the `PioSettings` asset from your dashboard credentials, so the zero-argument `PIO.Init()` works with no configuration code. See [Configuration](/integration/configuration).
+
+## Verify Integration
+
+Checks your configuration and connection from inside the Editor: the fastest answer to "is it wired up".
+
+## Decision Simulator
+
+Exercises your action definitions from the Editor without running the game, so you can see decisions and payloads before a build exists.
+
+## Generate Code Constants
+
+Generates compile-time constants for your registered action and event keys, and one typed payload class per action that declares parameters, into `Assets/PIO.Generated/`. Defaults from the schema are compiled in, so payload reads degrade safely offline.
+
+The Editor compares the server's schema against your generated code on focus and on entering Play mode. It warns when a parameter is added, removed, or re-typed; edits to a default or description are not drift. Regenerate to clear the warning.
+
+## Diagnostics
+
+`PIO/Diagnostics/Inspector` shows live SDK state, session, last decision, and event-queue depth. `PIO/Diagnostics/Event Log` shows every event the SDK enqueues, as it happens. For device builds, `ShowDebugOverlay` renders a collapsible panel with the same vitals, refreshed every second; it is a development aid, not for shipping.

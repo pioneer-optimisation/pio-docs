@@ -3,10 +3,34 @@ title: "Offline & lifecycle"
 description: "Queueing, flushing, and app-lifecycle behaviour."
 ---
 
-<Note>Under construction.</Note>
+## The options
 
-Will cover:
+{/* snippet:options */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs
+static PioOptions TunedOptions() => new PioOptions
+{
+    OfflineMode = false,         // true: instant init, fallback decisions, no network
+    MaxEventQueueSize = 10000,   // oldest events evicted past the cap
+    FlushIntervalSeconds = 30f,  // background flush cadence
+    DecisionTimeoutMs = 2000,    // per-decision budget before the fallback serves
+};
+```
+{/* /snippet:options */}
 
-- Offline mode and the event queue
-- Flush behaviour and intervals; session heartbeats
-- What happens across app pause, resume, and quit
+## Offline behaviour
+
+With `OfflineMode` on, initialisation is instant, every decision returns the registered fallback immediately (`Source = Fallback`), and events enqueue but never flush. `TrackingEnabled = false` takes precedence over offline mode. `PIO.IsOffline` reports the mode at runtime.
+
+Without it, the SDK degrades to the same place gracefully: an unreachable backend serves fallbacks and queues events until connectivity returns.
+
+## The event queue
+
+Events enqueue synchronously and flush in background batches every `FlushIntervalSeconds`. The queue persists on device, so a force-quit loses nothing; unflushed events go out on the next launch. Past `MaxEventQueueSize`, the oldest events are evicted and an `EVENT_QUEUE_FULL` warning fires.
+
+## Sessions
+
+A session starts at initialisation and rolls over after `SessionTimeoutMinutes` of background time (default 5). `PIO.SessionId` identifies the current session; `PIO.UserId` is a stable identifier persisted on device. Custom state set with `SetState` is per-session.
+
+## Decision timing
+
+`DecisionTimeoutMs` (default 2000) is the per-decision budget before the fallback serves. Raise it for high-latency audiences; the trade is a longer worst-case wait at the decision point.

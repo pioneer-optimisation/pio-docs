@@ -3,9 +3,21 @@ title: "State & context"
 description: "Give decisions the player context they need."
 ---
 
-<Note>Under construction.</Note>
+`PIO.SetState` sets a named value included in the next decision's state snapshot. Better context means better decisions; a difficulty choice that cannot see the player's level is guessing.
 
-Will cover:
+{/* snippet:state */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs
+// State feeds the next decision's snapshot; set it before you ask.
+PIO.SetState("std_level_index", 3);
+PIO.SetState("std_xp_percent", 0.4f);
+```
+{/* /snippet:state */}
 
-- `PIO.SetState` and supported value types
-- Which state matters for decision quality, and when to set it
+## The rules
+
+- Accepted types: `string`, `int`, `long`, `float`, `double`, `bool`, or null. Anything else is warned and dropped.
+- Visibility is immediate: `SetState` then `GetDecision` in the same frame sees the value.
+- State is per-session and cleared on re-initialisation.
+- Keys should match state definitions registered in the dashboard, such as `std_level_index`.
+
+The SDK adds context of its own: each decision's snapshot includes per-action decision counters from earlier calls in the session.
