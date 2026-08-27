@@ -33,6 +33,7 @@ var config = new PioConfig
 };
 
 await PIO.Init(config);
+if (this == null) return; // Destroyed during the await: stop.
 if (!PIO.IsReady)
 {
     Debug.Log($"PIO init failed: {PIO.State}");
@@ -48,6 +49,7 @@ Ask for a decision at the decision point and apply the returned action. The fall
 {/* snippet:decision */}
 ```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
 var decision = await PIO.GetDecision("Tutorial");
+if (this == null) return; // Destroyed during the await: stop.
 var action = decision?.Action ?? "Short";
 ```
 {/* /snippet:decision */}
