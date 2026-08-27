@@ -21,5 +21,5 @@ Every page here is customer-facing PIO copy. The brand voice (Editorial Bone, Br
 ## Content rules
 
 - Code in quickstart and integration pages is extracted from the compiling sample in pio-unity-sdk via markers. Never hand-write a code block that claims to be SDK usage.
-- Do not document unreleased behaviour. A page ships when the surface it documents has shipped.
+- Do not document unreleased behaviour. Before the site launches (DNS cutover), under-construction stubs may sit in navigation; from launch, a page appears in navigation only when the surface it documents has shipped.
 - Tell integrators to pin an exact SDK tag; the SDK is pre-1.0.

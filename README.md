@@ -4,7 +4,7 @@ Customer-facing documentation for PIO, published with Mintlify at docs.pioneerop
 
 ## Working locally
 
-- `mise trust` once after cloning (node 22 is pinned here; the mint CLI refuses non-LTS node)
+- `mise trust && mise install` once after cloning: installs node 22 (the mint CLI refuses non-LTS node) and the pinned mint CLI itself
 - `mise run dev` starts the local preview (mint dev)
 - `mise run lint` runs the brand copy lint: no em/en-dashes, British spelling (ported from pio-web's brand-lint, ENG-377)
 

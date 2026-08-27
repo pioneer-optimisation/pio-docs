@@ -18,7 +18,7 @@ const RULES = [
   },
   {
     name: "us-spelling",
-    regex: /\b(?:optimiz(?:e|es|ed|ing|ation)|behavior|analyze|modeling|customiz(?:e|ed|es|ing|ation))\b/gi,
+    regex: /\b(?:optimiz\w+|behavior(?:s|al|ally)?|analyz\w+|model(?:ing|ed|er)|customiz\w+)\b/gi,
     hint: "use British spelling (optimise, behaviour, analyse, modelling, customise)",
   },
 ];
