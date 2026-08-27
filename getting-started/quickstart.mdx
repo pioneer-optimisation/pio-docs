@@ -3,15 +3,69 @@ title: "Quickstart"
 description: "Six steps from install to a verified first decision."
 ---
 
-<Note>Under construction. This page ships alongside the first tested SDK release it documents.</Note>
+<Note>Under construction. This page ships alongside the first tested SDK release it documents. The code below is extracted from the sample project that compiles against each release; the quickstart *cannot* drift from the SDK.</Note>
 
-The quickstart will walk through:
+## 1. Install
 
-1. Install the SDK via UPM, pinned to an exact release tag
-2. Configure `PioSettings`: API key, account, project
-3. Initialise with `PIO.Init`
-4. Request a decision with `PIO.GetDecision` and apply the returned action
-5. Track a valued event with `PIO.TrackEvent`
-6. Watch the events arrive in your dashboard
+Install the SDK via UPM, pinned to an exact release tag. Full instructions land with the tested release.
 
-Every code block on this page is extracted from a sample project that compiles against each SDK release; the quickstart *cannot* drift from the SDK.
+## 2. Configure
+
+Create your project in the dashboard and note the API key, account id, and project id.
+
+## 3. Initialise
+
+Register every action definition your game uses, each with a fallback, then initialise once at startup.
+
+{/* snippet:init */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
+var config = new PioConfig
+{
+    ApiKey = apiKey,
+    AccountId = accountId,
+    ProjectId = projectId,
+    Actions = new Dictionary<string, ActionDef>
+    {
+        // Every action def carries a fallback: the action your game
+        // uses when the backend cannot be reached in time.
+        ["Tutorial"] = new ActionDef { FallbackAction = "Short" },
+    },
+};
+
+await PIO.Init(config);
+if (!PIO.IsReady)
+{
+    Debug.Log($"PIO init failed: {PIO.State}");
+    return;
+}
+```
+{/* /snippet:init */}
+
+## 4. Request a decision
+
+Ask for a decision at the decision point and apply the returned action. The fallback action comes back when the backend is unreachable, so your game never blocks on PIO.
+
+{/* snippet:decision */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
+var decision = await PIO.GetDecision("Tutorial");
+var action = decision?.Action ?? "Short";
+```
+{/* /snippet:decision */}
+
+## 5. Track events
+
+Valued events feed reward derivation; bare events record occurrences.
+
+{/* snippet:event */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
+// A valued event: the value feeds reward derivation.
+PIO.TrackEvent("level_complete", 1.0);
+
+// A bare occurrence, no value.
+PIO.TrackEvent("tutorial_complete");
+```
+{/* /snippet:event */}
+
+## 6. Verify
+
+Run the game, then confirm events arrive: the `PIO/Verify Integration` editor menu and the dashboard's integration-health view.
