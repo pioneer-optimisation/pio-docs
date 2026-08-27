@@ -1,54 +1,88 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mintlify Starter Kit",
+  "name": "PIO",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#E25A1F",
+    "light": "#F0A47A",
+    "dark": "#B43F12"
   },
   "favicon": "/favicon.svg",
-  "navigation": {
-    "pages": [
-      {
-        "group": "Getting Started",
-        "pages": [
-          "index",
-          "quickstart"
-        ]
-      }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "navbar": {
-    "links": [
+  "navigation": {
+    "tabs": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "index",
+              "getting-started/quickstart",
+              "getting-started/verify-your-integration"
+            ]
+          },
+          {
+            "group": "Integration guide",
+            "pages": [
+              "integration/installation-and-versioning",
+              "integration/configuration",
+              "integration/decisions",
+              "integration/events-and-rewards",
+              "integration/state-and-context",
+              "integration/consent-and-privacy",
+              "integration/error-handling",
+              "integration/offline-and-lifecycle",
+              "integration/editor-tools"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/how-pio-optimises",
+              "concepts/action-spaces-and-payloads",
+              "concepts/reward-design"
+            ]
+          },
+          {
+            "group": "Dashboard",
+            "pages": [
+              "dashboard/onboarding-checklist",
+              "dashboard/integration-health",
+              "dashboard/model-lifecycle"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "Unity SDK",
+            "pages": [
+              "api-reference/index"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrate with your AI",
+        "groups": [
+          {
+            "group": "Agent integration",
+            "pages": [
+              "ai/integrate-with-your-ai",
+              "ai/agent-integration-guide",
+              "ai/mcp-server",
+              "ai/llms-txt"
+            ]
+          }
+        ]
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://app.mintlify.com"
-    }
+    ]
   },
   "contextual": {
     "options": [
@@ -62,11 +96,18 @@
       "vscode"
     ]
   },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+  "background": {
+    "color": {
+      "light": "#F4EFE6",
+      "dark": "#1F2428"
+    }
+  },
+  "fonts": {
+    "heading": {
+      "family": "Geist"
+    },
+    "body": {
+      "family": "Geist"
     }
   }
 }

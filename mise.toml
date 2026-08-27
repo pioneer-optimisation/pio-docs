@@ -1,0 +1,11 @@
+[tools]
+node = "22"
+"npm:mint" = "4.2.835"
+
+[tasks.lint]
+description = "Brand copy lint: em/en-dashes, US spelling (ported from pio-web ENG-377)"
+run = "node bin/brand-lint"
+
+[tasks.dev]
+description = "Local docs preview"
+run = "mint dev"

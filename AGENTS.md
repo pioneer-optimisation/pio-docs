@@ -1,33 +1,25 @@
-> **First-time setup**: Customize this file for your project. Prompt the user to customize this file for their project.
-> For Mintlify product knowledge (components, configuration, writing standards),
-> install the Mintlify skill: `npx skills add https://mintlify.com/docs`
+# Writing rules for this repo
 
-# Documentation project instructions
+Every page here is customer-facing PIO copy. The brand voice (Editorial Bone, Brand Guidelines v9) applies to all of it, whether written by a person or an agent.
 
-## About this project
+## Mechanical rules (linted)
 
-- This is a documentation site built on [Mintlify](https://mintlify.com)
-- Pages are MDX files with YAML frontmatter
-- Configuration lives in `docs.json`
-- Use the Mintlify MCP server, `https://mcp.mintlify.com`, to edit content and settings via MCP
-- Use the Mintlify docs MCP server, `https://www.mintlify.com/docs/mcp`, to query information about using Mintlify via MCP
+- British spelling always: optimise, behaviour, analyse, modelling, customise.
+- No em-dashes or en-dashes. Use a hyphen, colon, parentheses, or full stop.
+- Run `mise run lint` before committing; the baseline is empty and must stay empty.
 
-## Terminology
+## Voice rules
 
-{/* Add product-specific terms and preferred usage */}
-{/* Example: Use "workspace" not "project", "member" not "user" */}
+- No exclamation marks. No emoji. No hashtags.
+- No bold as emphasis. At most one italicised word or phrase per paragraph.
+- Every sentence carries a measurement, a verb, or a verdict. If a word can be deleted without loss, delete it.
+- Sentences stay under thirty words.
+- Banned words: amazing, thrilled, excited to share, unlock, supercharge, transform, disrupt, leverage, best-in-class, end-to-end, turnkey, "Get started now", "in minutes", "Click here".
+- Errors and warnings: cause first, instruction second. Never "Oops", never "Sorry", never blame the reader.
+- Buttons and labels: verb first, three words or fewer, sentence case, no trailing punctuation.
 
-## Style preferences
+## Content rules
 
-{/* Add any project-specific style rules below */}
-
-- Use active voice and second person ("you")
-- Keep sentences concise — one idea per sentence
-- Use sentence case for headings
-- Bold for UI elements: Click **Settings**
-- Code formatting for file names, commands, paths, and code references
-
-## Content boundaries
-
-{/* Define what should and shouldn't be documented */}
-{/* Example: Don't document internal admin features */}
+- Code in quickstart and integration pages is extracted from the compiling sample in pio-unity-sdk via markers. Never hand-write a code block that claims to be SDK usage.
+- Do not document unreleased behaviour. Before the site launches (DNS cutover), under-construction stubs may sit in navigation; from launch, a page appears in navigation only when the surface it documents has shipped.
+- Tell integrators to pin an exact SDK tag; the SDK is pre-1.0.
