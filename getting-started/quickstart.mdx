@@ -19,10 +19,6 @@ Register every action definition your game requests, each with a fallback, then 
 
 {/* snippet:init */}
 ```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
-// Your safe default, named once: the registered fallback and the
-// baseline path both use it.
-const string tutorialDefault = "Short";
-
 var config = new PioConfig
 {
     ApiKey = apiKey,
@@ -31,7 +27,7 @@ var config = new PioConfig
     Actions = new Dictionary<string, ActionDef>
     {
         // The fallback serves whenever the backend cannot answer.
-        ["Tutorial"] = new ActionDef { FallbackAction = tutorialDefault },
+        ["Tutorial"] = new ActionDef { FallbackAction = "Short" },
     },
 };
 
@@ -47,17 +43,17 @@ if (!PIO.IsReady)
 
 ## 4. Request a decision
 
-Ask at the decision point and apply the returned action. Failure handling is built in: offline, degraded, or timed out, the call returns your registered fallback. A null `Action` marks the baseline control group; run your existing default.
+Ask at the decision point and apply the returned action. Failure handling is built in: offline, degraded, or timed out, the call returns your registered fallback. A null `Action` marks the baseline control group; show that player your control experience.
 
 {/* snippet:decision */}
 ```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
 // Failures never surface here: offline, degraded, or timed out,
 // the SDK serves the FallbackAction you registered. A null Action
-// means this player is in the baseline control group: run your
-// existing default path.
+// marks the baseline control group: show that player your control
+// experience.
 var decision = await PIO.GetDecision("Tutorial");
 if (this == null) return; // Destroyed during the await: stop.
-var action = decision.Action ?? tutorialDefault;
+var action = decision.Action ?? "Short";
 ```
 {/* /snippet:decision */}
 

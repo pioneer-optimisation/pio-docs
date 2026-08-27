@@ -5,7 +5,7 @@ description: "What an action is, and what your game receives."
 
 ## Action definitions
 
-An action definition is one decision point with a fixed set of candidate actions: a `Tutorial` definition might offer `Short`, `Medium`, and `Long`. The model's job is choosing among those keys per player. Two defaults guard it: the dashboard's default action (served to the control group) and the code-registered `FallbackAction` (served when the backend is unreachable). They are usually the same safe choice.
+An action definition is one decision point with a fixed set of candidate actions: a `Tutorial` definition might offer `Short`, `Medium`, and `Long`. The model's job is choosing among those keys per player. Two safeties guard it: the dashboard's default action, which code generation bakes into `PioActions.All` as each definition's fallback, and the code-registered `FallbackAction` served when the backend is unreachable.
 
 Start small. A decision point with three to five meaningfully different actions learns faster than one with twenty near-duplicates, and the space can grow later.
 

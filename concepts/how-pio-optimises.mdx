@@ -7,6 +7,6 @@ Every project starts safe. A baseline model represents your game as it is: contr
 
 Learned models train on the decisions and valued events your game sends. They take traffic only after passing readiness gates: enough decisions, events, and players observed, against thresholds set by policy. Until a model is ready, it cannot be activated; the dashboard shows each unmet requirement with its observed and required counts, and what to do next.
 
-Traffic then shifts deliberately, not automatically to 100%. The control group persists so results stay measurable, which is why your code always handles the baseline case: a null `Action` with your default path is the experiment working as designed, not an error.
+Traffic then shifts deliberately, not automatically to 100%. The control group persists so results stay measurable, which is why your code always handles the baseline case: a null `Action` is the control arm, not an error.
 
 The numbers you read in the dashboard carry the same discipline. A metric without enough data behind it is annotated as not yet meaningful rather than presented as a result.

@@ -5,7 +5,7 @@ description: "Request a decision, apply the returned action, read typed payloads
 
 ## Action definitions
 
-An action definition is a decision point with a fixed set of candidate actions. Define it in the dashboard and pick its default action, the one served to control-group players. Register the same key in `PioConfig.Actions` with a `FallbackAction`, the action your game uses when the backend is unreachable. The two are usually the same safe choice.
+An action definition is a decision point with a fixed set of candidate actions. Define it in the dashboard, where its default action becomes the fallback that code generation bakes into `PioActions.All`. Register the same key in `PioConfig.Actions` with a `FallbackAction`, the action your game uses when the backend is unreachable.
 
 ## Requesting
 
@@ -25,15 +25,15 @@ switch (d?.Source)
     case DecisionSource.Fallback:   // backend unreachable: your registered fallback
         Apply(d.Action);
         break;
-    case DecisionSource.Baseline:   // control group: Action is null by design
+    case DecisionSource.Baseline:   // control group: Action is null
     default:                        // null result: tracking is disabled
-        Apply(TutorialDefault);     // your safe default, named once
+        Apply("Short");             // your control experience
         break;
 }
 ```
 {/* /snippet:decision-sources */}
 
-A `Fallback` decision arrives when the backend is unreachable, times out past `DecisionTimeoutMs`, or authentication has not succeeded. A `Baseline` decision means this player is in the control group: `Action` is null by design, and your default path is the experiment's control. The call returns null only when tracking is disabled. Cancelling your own token rethrows `OperationCanceledException` rather than falling back.
+A `Fallback` decision arrives when the backend is unreachable, times out past `DecisionTimeoutMs`, or authentication has not succeeded. A `Baseline` decision means this player is in the control group: `Action` is null, and you show your control experience. The SDK records the arm on every decision either way. The call itself returns null only when tracking is disabled. Cancelling your own token rethrows `OperationCanceledException` rather than falling back.
 
 ## Payloads
 
