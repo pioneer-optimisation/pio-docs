@@ -1,8 +1,180 @@
 ---
 title: "Connect the PIO MCP server"
-description: "Give your agent live access to integration status, events, and project setup."
+description: "Give your coding agent live access to project status, integration health, and project setup."
 ---
 
-<Note>Under construction. Ships with the PIO MCP server.</Note>
+The PIO MCP server lets a coding agent check its own work. After the agent writes the integration and runs the game, it calls `check_integration` and reads the same facts the dashboard shows: whether events arrived, which event types are still missing, and the next step. Six tools cover the loop from creating a project to confirming that decisions flow in and events flow out.
 
-Will cover connecting the server, the available tools, token scopes (read-only by default; write scopes opt-in), and how an agent uses it to close the integrate-and-verify loop.
+The server speaks MCP over Streamable HTTP at one endpoint:
+
+```text
+https://app.pioneeroptimisation.com/mcp
+```
+
+Every request is a `POST` with a JSON-RPC body. There is no session to keep alive.
+
+## Choose a credential
+
+Two credential types work, with the same scopes. Pick by how the agent runs.
+
+| Credential | Use it for | How it is issued |
+| --- | --- | --- |
+| OAuth 2.1 | Interactive clients: Claude Code, Cursor, and any client with an MCP login flow | The client registers itself, opens a consent page, and you approve it once |
+| API token | Headless runs: CI, scheduled agents, scripts | You create it in the dashboard and paste it into the client's configuration |
+
+Scopes are the same for both:
+
+| Scope | Grants |
+| --- | --- |
+| `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle` |
+| `mcp:write` | `create_project` and `get_api_key`, in addition to the read tools |
+
+A credential without `mcp:write` never sees the write tools in `tools/list`. Every credential is bound to one account, chosen when it is issued.
+
+### OAuth 2.1
+
+The server publishes standard discovery documents, so a client that supports MCP authorisation needs only the endpoint URL:
+
+- `/.well-known/oauth-protected-resource` names the authorisation server and the scopes.
+- `/.well-known/oauth-authorization-server` names the authorise, token, and registration endpoints.
+- `/oauth/register` accepts dynamic client registration (RFC 7591). No client secret is issued; clients are public.
+- Authorisation code flow with PKCE (`S256`) is required. The token request must carry `resource=https://app.pioneeroptimisation.com/mcp` (RFC 8707); tokens are issued for that resource only.
+
+On the consent page you pick the account the client may act in and confirm the scopes it asked for. Access tokens last one hour; the client renews them with a refresh token without asking you again.
+
+### API token
+
+In the dashboard open your account menu, then API tokens, then New token. Set a name, pick the account, tick the scopes the agent needs, and set an expiry date. The token is shown once, starts with `pio_`, and is stored as a hash: if you lose it, create another.
+
+Treat the token as a secret. Keep it in an environment variable or the client's secret store, never in a repository.
+
+## Connect a client
+
+<Tabs>
+  <Tab title="Claude Code">
+    With OAuth, add the server and complete the login when prompted:
+
+    ```bash
+    claude mcp add --transport http pio https://app.pioneeroptimisation.com/mcp
+    ```
+
+    With an API token, pass it as a header:
+
+    ```bash
+    claude mcp add --transport http pio https://app.pioneeroptimisation.com/mcp \
+      --header "Authorization: Bearer $PIO_MCP_TOKEN"
+    ```
+  </Tab>
+  <Tab title="Cursor and JSON clients">
+    Add the server to `mcp.json` (project-level `.cursor/mcp.json` or the global file). Omit `headers` to use OAuth.
+
+    ```json
+    {
+      "mcpServers": {
+        "pio": {
+          "url": "https://app.pioneeroptimisation.com/mcp",
+          "headers": {
+            "Authorization": "Bearer pio_..."
+          }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Codex CLI">
+    Add the server to `~/.codex/config.toml`, reading the token from an environment variable:
+
+    ```toml
+    [mcp_servers.pio]
+    url = "https://app.pioneeroptimisation.com/mcp"
+    bearer_token_env_var = "PIO_MCP_TOKEN"
+    ```
+  </Tab>
+</Tabs>
+
+Confirm the connection by asking the agent to call `whoami`. The response names the account, the user, the scopes, the credential type, and the projects in the account.
+
+## Tools
+
+Tool arguments use numeric ids. `whoami` lists the project ids; `create_project` returns the id of the project it made.
+
+| Tool | Scope | Arguments | Returns |
+| --- | --- | --- | --- |
+| `whoami` | `mcp:read` | none | Account, user, scopes, credential type, and the account's projects |
+| `get_project_status` | `mcp:read` | `project_id` | The onboarding checklist: each step's state, completion time, and dashboard path, plus the next step |
+| `check_integration` | `mcp:read` | `project_id` | Integration health: SDK liveness, event-type coverage, active users, the ladder of checks, and the next step |
+| `get_model_lifecycle` | `mcp:read` | `project_id`, optional `model_id` | Readiness and lifecycle phase per model, with the project's latest evaluation summary |
+| `create_project` | `mcp:write` | `name`, optional `store_platform`, `launch_stage`, `expected_mau_band` | The new project's id, pending a human attestation (see below) |
+| `get_api_key` | `mcp:write` | `project_id` | The project's API key and account id for `PioSettings`. Account admins only; every reveal is audited |
+
+Every tool response is a JSON document. When a tool cannot do what was asked it returns `error`, `message`, and `next_step`, so the agent can act on the failure rather than guess:
+
+```json
+{
+  "error": "project_not_found",
+  "message": "No project 999999999 in this account.",
+  "next_step": "Call whoami to list the projects this credential can see."
+}
+```
+
+### check_integration
+
+This is the tool the agent runs after each change. The `rungs` array is the same ladder as the dashboard's integration-health view; each rung carries its facts and, when it is not yet satisfied, a `next_step` with a message, the dashboard path, and a link into these docs. The top-level `next_step` is the one thing to do now. `coverage` lists the event types the project expects, the ones seen, and any unregistered types the game is sending.
+
+```json
+{
+  "project": { "id": 5, "name": "MCP live check" },
+  "status": "never",
+  "streaming": false,
+  "last_event_at": null,
+  "sdk_version": null,
+  "coverage": {
+    "expected": ["decision", "reward"],
+    "seen": [],
+    "unseen": ["decision", "reward"],
+    "unregistered": []
+  },
+  "users": { "active_24h": 0, "active_7d": 0 },
+  "rungs": [
+    {
+      "code": "sdk",
+      "title": "SDK connected",
+      "state": "waiting",
+      "next_step": {
+        "code": "sdk_waiting",
+        "message": "No events received yet. Initialise the SDK with this project's API key and run the game.",
+        "path": "/projects/5/debug",
+        "docs": "https://docs.pioneeroptimisation.com/getting-started/quickstart"
+      }
+    }
+  ],
+  "next_step": { "code": "sdk_waiting", "message": "..." }
+}
+```
+
+`status` is `never` until the first event, `integrated` while events keep arriving, and `stale` once they stop; `streaming` is true while events are arriving now. See [Integration health](/dashboard/integration-health) for what each rung checks.
+
+## The integrate-and-verify loop
+
+1. `whoami` to confirm the account and find or choose a project. With `mcp:write`, `create_project` makes a new one.
+2. `get_api_key` for the `ApiKey`, `AccountId`, and `ProjectId` that go into `PioSettings`. Keep the key out of source control.
+3. Integrate the SDK following the [quickstart](/getting-started/quickstart) and run the game.
+4. `check_integration`. If `status` is still `never`, the `next_step` says why. Fix, run, repeat.
+5. `get_project_status` to see which onboarding steps remain, then `get_model_lifecycle` once inputs and a model exist.
+
+## Projects created by an agent
+
+A project made through `create_project` is created pending attestation. Before PIO accepts events, a member of your studio must answer the child-directed question in the project's settings; agents never answer it. Until then:
+
+- `get_api_key` returns the key with `attestation_pending: true`, and the key is not published to the edge, so the SDK cannot authenticate with it.
+- `check_integration` and `get_project_status` report the attestation as the next step, with the settings path to complete it.
+
+The person who confirms is recorded with the attestation, exactly as for a project created in the dashboard. See [Consent and privacy](/integration/consent-and-privacy) for what the answer changes.
+
+## Limits and audit
+
+- `get_api_key` is limited to account admins. A non-admin credential gets a `forbidden` error naming who can help.
+- Each key reveal and each project creation is written to the account's audit log with the credential, the user, and the request's IP address.
+- Unauthenticated requests to `/mcp` are limited to 20 per minute per IP; client registration to 5 per minute; token requests to 30 per minute.
+- Tool calls are recorded (tool name, duration, outcome, never arguments) so the tool set can improve with use.
+- Nothing in this tool set deletes or rotates anything. Rotating an API key, when it ships, will be a separate, explicit tool.
