@@ -9,7 +9,7 @@ Configuration splits in two: `PioConfig` carries the connection, `PioOptions` ca
 
 Three identifiers are required and validated at initialisation: `ApiKey`, `AccountId`, and `ProjectId`, all from your project's dashboard settings. `Actions` registers every action definition your game requests, each with a non-empty `FallbackAction`.
 
-The remaining fields are optional: `EnableDebugLogging` for verbose `[PIO]` console output while integrating, `ShowDebugOverlay` for the on-device debug panel, and `SessionTimeoutMinutes` (default 5) controlling when background time starts a new session. Leave the `*UrlOverride` fields blank in shipping builds; they exist for internal test rigs.
+The remaining fields are optional. `EnableDebugLogging` gives verbose `[PIO]` console output while integrating, `ShowDebugOverlay` shows the on-device debug panel, and `SessionTimeoutMinutes` (default 5) controls when background time starts a new session. Leave the `*UrlOverride` fields blank in shipping builds; they exist for internal test rigs.
 
 ## PioOptions
 

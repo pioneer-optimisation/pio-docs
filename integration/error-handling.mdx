@@ -3,7 +3,7 @@ title: "Error handling"
 description: "Every error carries a code, a severity, and a next step."
 ---
 
-The SDK fails soft. A decision that cannot reach the backend returns your fallback action, a dropped event is logged rather than thrown, and an exception inside SDK code is caught before it reaches your game loop. Everything worth knowing surfaces through one channel.
+The SDK fails soft. A decision that cannot reach the backend returns your fallback action. A dropped event is logged rather than thrown, and an exception inside SDK code is caught before it reaches your game loop. Everything worth knowing surfaces through one channel.
 
 {/* snippet:onerror */}
 ```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs

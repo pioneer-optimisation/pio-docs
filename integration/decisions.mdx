@@ -47,6 +47,7 @@ An action option can carry a payload: difficulty curves, copy, discount percenta
 // default you pass.
 var difficulty = await PIO.GetDecision("FirstLevelDifficulty");
 if (this == null) return;
+if (difficulty == null) return; // Tracking disabled: nothing to read.
 var enemyHealth = difficulty.GetFloat("enemy_health", 1f);
 var introCopy = difficulty.GetString("intro_copy", "Welcome");
 ```

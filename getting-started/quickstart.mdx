@@ -49,11 +49,11 @@ Ask at the decision point and apply the returned action. Failure handling is bui
 ```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
 // Failures never surface here: offline, degraded, or timed out,
 // the SDK serves the FallbackAction you registered. A null Action
-// marks the baseline control group: show that player your control
-// experience.
+// marks the baseline control group, and a null result means
+// tracking is disabled; both show your control experience.
 var decision = await PIO.GetDecision("Tutorial");
 if (this == null) return; // Destroyed during the await: stop.
-var action = decision.Action ?? "Short";
+var action = decision?.Action ?? "Short";
 ```
 {/* /snippet:decision */}
 

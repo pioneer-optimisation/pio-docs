@@ -7,14 +7,14 @@ description: "Every public symbol in the PIO Unity SDK, generated from the SDK's
 
 <Note>Generated from the SDK's canonical reference at v0.3.2. Fixes belong in pio-unity-sdk, not here.</Note>
 
-This document catalogues every public symbol in the SDK. It is the V1 surface —
+This document catalogues every public symbol in the SDK. It is the V1 surface:
 the compatibility baseline for future versions.
 
 ## Conventions
 
 | Convention | Rule |
 |------------|------|
-| Namespace | `PIO` — all public types |
+| Namespace | `PIO` (all public types) |
 | Entry point | `PIO` static class; no other public class exposes behaviour |
 | Async public | `Task` / `Task<T>` (never `UniTask`) |
 | Threading | All public members: call from the Unity main thread only. Callbacks and continuations resume on the main thread |
@@ -45,10 +45,10 @@ All properties are read-only and safe to read at any time.
 
 #### `event Action<PioError> OnError`
 
-Raised when the SDK encounters an error — auth, a decision fallback, event
+Raised when the SDK encounters an error: auth, a decision fallback, event
 ingestion, an evicted queue, or an unhandled exception inside SDK code. Always
 fires on the Unity main thread, so handlers may touch Unity APIs. Standard C#
-event — subscribe with `+=`, unsubscribe with `-=`. Subscribe **before** `Init`
+event: subscribe with `+=`, unsubscribe with `-=`. Subscribe **before** `Init`
 to catch init-time errors. See [error-handling.md](/integration/error-handling).
 
 ### Methods
@@ -65,12 +65,12 @@ session.
 | Idempotency | If `State == Ready`: no-op, logs a warning. If `State == Initializing`: awaits the in-flight init |
 | Throws | `ArgumentNullException` if `config` is null; `ArgumentException` if `ApiKey`, `AccountId`, or `ProjectId` is empty, or an `ActionDef` is null / has no `FallbackAction` |
 | Failure | Sets `State = Failed` and reports via `OnError`; the returned `Task` does **not** throw (the exception is captured internally) |
-| Cancellation | Not accepted — init is fire-once at boot |
+| Cancellation | Not accepted; init is fire-once at boot |
 
 #### `Init() → Task`
 
 Zero-argument overload that loads a [`PioSettings`](#piosettings-scriptableobject)
-asset from `Resources/PioSettings.asset` — no code configuration required.
+asset from `Resources/PioSettings.asset`, so no code configuration is required.
 Throws `InvalidOperationException` if no asset is present. For explicit config or
 secure runtime key injection, use the two-argument overload (its arguments take
 precedence over the asset).
@@ -99,7 +99,7 @@ Request a decision for a registered action definition.
 | Throws | `ArgumentException` if `actionDefKey` is empty or not registered in `PioConfig.Actions`; `InvalidOperationException` if `State != Ready` |
 | Returns | A [`DecisionResult`](#decisionresult-sealed-class); `null` when tracking is disabled |
 | Timeout | If the Worker doesn't respond within `PioOptions.DecisionTimeoutMs`, returns `Source = Fallback` with the registered `FallbackAction` |
-| Cancellation | Cancelling `ct` rethrows `OperationCanceledException` — it does **not** produce a fallback |
+| Cancellation | Cancelling `ct` rethrows `OperationCanceledException`; it does **not** produce a fallback |
 | Side effects | Auto-emits one decision event; increments the per-action decision counter included in future state snapshots |
 
 #### `TrackEvent(string eventType[, double value]) → void`
@@ -113,7 +113,7 @@ Enqueues synchronously and returns immediately.
 | Not ready / tracking disabled | Silent no-op |
 | Reserved namespace | An `eventType` starting with `pio.` is warned and **hard-dropped** (reserved for SDK internal events) |
 | Unregistered type | Warns but **still enqueues** (permissive). Register it in pio-web to suppress the warning |
-| Empty registry | Fully permissive — all event types accepted |
+| Empty registry | Fully permissive: all event types accepted |
 | Invalid value | Negative, NaN, and infinite values are warned and dropped |
 
 The numeric overload writes `value` to the top-level `event_value` field.
@@ -126,9 +126,9 @@ Set a custom game state value included in the next `GetDecision` snapshot.
 |--------|--------|
 | Thread | Main thread |
 | Not ready | Warns and returns |
-| Types | `string`, `int`, `long`, `float`, `double`, `bool`, or `null` — other types are warned and dropped |
+| Types | `string`, `int`, `long`, `float`, `double`, `bool`, or `null`; other types are warned and dropped |
 | Lifecycle | Per-session (cleared on re-init) |
-| Visibility | Immediate — `SetState` then `GetDecision` in the same frame sees the value |
+| Visibility | Immediate: `SetState` then `GetDecision` in the same frame sees the value |
 
 Keys should match state definitions registered in pio-web (e.g.
 `std_level_index`).
@@ -142,15 +142,15 @@ required and validated at init time. Use object-initializer syntax.
 
 | Property | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
-| `ApiKey` | `string` | — | Yes | API key from the PIO dashboard |
-| `AccountId` | `string` | — | Yes | Account identifier |
-| `ProjectId` | `string` | — | Yes | Project identifier |
+| `ApiKey` | `string` | (none) | Yes | API key from the PIO dashboard |
+| `AccountId` | `string` | (none) | Yes | Account identifier |
+| `ProjectId` | `string` | (none) | Yes | Project identifier |
 | `Environment` | `PioEnvironment` | `Production` | No | Target inference Worker |
 | `Actions` | `Dictionary<string, ActionDef>` | empty | Yes | Registered action definitions, keyed by action-def identifier. Each value needs a non-empty `FallbackAction` |
 | `EnableDebugLogging` | `bool` | `false` | No | Enable `[PIO]` diagnostic logs |
-| `ShowDebugOverlay` | `bool` | `false` | No | Show the in-game debug overlay (state, queue, last decision, last error). A development aid — see [error-handling.md](/integration/error-handling) |
+| `ShowDebugOverlay` | `bool` | `false` | No | Show the in-game debug overlay (state, queue, last decision, last error). A development aid; see [error-handling.md](/integration/error-handling) |
 | `SessionTimeoutMinutes` | `int` | `5` | No | Background minutes before a new session starts |
-| `BaseUrlOverride` | `string` | `null` | No | **Internal/test only.** Overrides the Worker base URL (auth, infer, warm) — bypasses `Environment` |
+| `BaseUrlOverride` | `string` | `null` | No | **Internal/test only.** Overrides the Worker base URL (auth, infer, warm); bypasses `Environment` |
 | `IngestBaseUrlOverride` | `string` | `null` | No | **Internal/test only.** Overrides the ingest base URL (events/batch) |
 | `WebBaseUrlOverride` | `string` | `null` | No | **Internal/test only.** Overrides the pio-web base URL (event-definition fetch) |
 
@@ -187,7 +187,7 @@ Inspector-editable configuration asset at `Assets/Resources/PioSettings.asset`,
 loaded by the zero-argument `PIO.Init()`. The **Setup Wizard** generates it.
 Carries the `PioConfig` connection fields and the `PioOptions` knobs, plus
 `AutoInitialize` (auto-init on game start, off by default). `PioConfig.Actions`
-stays code-only — Unity can't serialise a dictionary in the Inspector.
+stays code-only: Unity can't serialise a dictionary in the Inspector.
 
 Ship **exactly one** `PioSettings` asset: `Resources.Load` returns the first one
 found in any `Resources/` folder, so a duplicate silently shadows the real one.
@@ -215,8 +215,8 @@ branch on `Source`.
 
 ### Option payload
 
-An action option can carry a **payload** — difficulty curves, popup copy, discount
-percentages — edited in the dashboard and delivered with the decision. The model
+An action option can carry a **payload** (difficulty curves, popup copy, discount
+percentages) edited in the dashboard and delivered with the decision. The model
 still chooses among the same option keys; the payload is opaque to training. So a
 studio retunes numbers server-side with **no client release and no retraining**.
 
@@ -240,7 +240,7 @@ copy          = payload.IntroCopy;    // string
 if (payload.Variant == TutorialPayload.VariantValues.Long) { ... }
 ```
 
-`From(null)` is safe — every property then returns its compiled-in default, which
+`From(null)` is safe: every property then returns its compiled-in default, which
 is what you get when tracking is disabled.
 
 | Parameter kind | Generated member |
@@ -248,7 +248,7 @@ is what you get when tracking is disabled.
 | `float` / `int` / `bool` / `string` | Typed property |
 | `enum` | `string` property + a nested `{Name}Values` class of `const string` choices |
 | `array<scalar>` | Typed array property (`float[]`, `int[]`, `bool[]`, `string[]`) |
-| `json` | `{Name}Json` raw-JSON `string` property — the documented trade-off for arbitrarily nested payloads |
+| `json` | `{Name}Json` raw-JSON `string` property, the documented trade-off for arbitrarily nested payloads |
 
 Enum choices are emitted as `const string`s rather than a C# `enum`: a value added
 in the dashboard later would have no enum member to map onto, and inventing one at
@@ -262,7 +262,7 @@ assembly definition, add a reference to the assembly containing `Assets/PIO.Gene
 
 The Editor compares the server's schema against `PioGeneratedSchema.json` on focus
 and on entering play mode, and warns when a parameter is **added, removed, or
-re-typed** — the changes that stale your generated code. Editing a parameter's
+re-typed**, the changes that stale your generated code. Editing a parameter's
 *default* or description is not drift: defaults are re-read from the server on
 every decision. Regenerate to clear the warning.
 
@@ -287,7 +287,7 @@ enemy.Health *= d.GetFloat("enemy_health", 1f);
 popup.Text   =  d.GetString("intro_copy", "Welcome!");
 ```
 
-**Every getter is total — none of them throws.** A missing payload, a missing key,
+**Every getter is total: none of them throws.** A missing payload, a missing key,
 or a type mismatch returns the default you passed. That is the designed degradation
 path: an app built against an older parameter schema keeps running on its
 compiled-in defaults, and so does one talking to a Worker that predates payloads.
@@ -306,7 +306,7 @@ construct them. Compare `Code` against [`PioErrorCodes`](#pioerrorcodes-static-c
 | Property | Type | Description |
 |----------|------|-------------|
 | `Severity` | `PioErrorSeverity` | How serious the error is |
-| `Code` | `string` | Stable code — one of the `PioErrorCodes` values |
+| `Code` | `string` | Stable code, one of the `PioErrorCodes` values |
 | `Message` | `string` | Human-readable summary |
 | `Details` | `string` | Optional additional context. May be `null` |
 | `Exception` | `System.Exception` | The underlying exception when available. May be `null` |
@@ -352,7 +352,7 @@ Transitions: `Uninitialized → Initializing → Ready`, or `Initializing → Fa
 |-------|---------|-------------------------|
 | `Worker` | Sampled by the inference Worker's policy | The sampled action key |
 | `Fallback` | Worker unreachable/timed out | The registered `FallbackAction` |
-| `Baseline` | User is in the A/B control group | `null` — run your existing path |
+| `Baseline` | User is in the A/B control group | `null`; show your control experience |
 
 ### `PioErrorSeverity`
 
@@ -378,7 +378,7 @@ fields on `PioConfig`.
 **Pre-1.0 (current):** minor version bumps may include source-breaking changes to
 the public API. Binary compatibility is not guaranteed. Pin to exact versions.
 
-**Post-1.0 (future):** semver applies — patch = bug fix, minor = additive only,
+**Post-1.0 (future):** semver applies: patch = bug fix, minor = additive only,
 major = breaking. The symbols above become the compatibility baseline.
 
 ## Assembly visibility

@@ -23,20 +23,13 @@ const RULES = [
   },
 ];
 
-// Generated files are synced from pio-unity-sdk verbatim; voice fixes for
-// them belong upstream, not here. Everything hand-written stays linted.
-const GENERATED = new Set(["api-reference/index.mdx"]);
-
 const files = [];
 (function walk(dir) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     if (e.name.startsWith(".") || e.name === "node_modules") continue;
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p);
-    else if (p.endsWith(".mdx")) {
-      const rel = path.relative(ROOT, p);
-      if (!GENERATED.has(rel)) files.push(rel);
-    }
+    else if (p.endsWith(".mdx")) files.push(path.relative(ROOT, p));
   }
 })(ROOT);
 
