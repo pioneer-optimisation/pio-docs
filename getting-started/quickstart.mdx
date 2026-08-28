@@ -3,19 +3,19 @@ title: "Quickstart"
 description: "Six steps from install to a verified first decision."
 ---
 
-<Note>Under construction. This page ships alongside the first tested SDK release it documents. The code below is extracted from the sample project that compiles against each release; the quickstart *cannot* drift from the SDK.</Note>
+<Note>The code on this page is extracted from a sample project that compiles against each SDK release; the quickstart *cannot* drift from the SDK.</Note>
 
 ## 1. Install
 
-Install the SDK via UPM, pinned to an exact release tag. Full instructions land with the tested release.
+Install the SDK via UPM, pinned to an exact release tag. Two minutes; the exact manifest lines are on [Installation & versioning](/integration/installation-and-versioning).
 
 ## 2. Configure
 
-Create your project in the dashboard and note the API key, account id, and project id.
+In the dashboard: create your project, then note its API key, account id, and project id. Define an action definition for your first decision point and pick its default action.
 
 ## 3. Initialise
 
-Register every action definition your game uses, each with a fallback, then initialise once at startup.
+Register every action definition your game requests, each with a fallback, then initialise once at startup.
 
 {/* snippet:init */}
 ```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
@@ -26,8 +26,7 @@ var config = new PioConfig
     ProjectId = projectId,
     Actions = new Dictionary<string, ActionDef>
     {
-        // Every action def carries a fallback: the action your game
-        // uses when the backend cannot be reached in time.
+        // The fallback serves whenever the backend cannot answer.
         ["Tutorial"] = new ActionDef { FallbackAction = "Short" },
     },
 };
@@ -44,15 +43,17 @@ if (!PIO.IsReady)
 
 ## 4. Request a decision
 
-Ask for a decision at the decision point and apply the returned action. The fallback action comes back when the backend is unreachable, so your game never blocks on PIO.
+Ask at the decision point and apply the returned action. Failure handling is built in: offline, degraded, or timed out, the call returns your registered fallback. A null `Action` marks the baseline control group; show that player your control experience.
 
 {/* snippet:decision */}
 ```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
-// Offline, degraded, or timed out: the SDK serves the
-// FallbackAction you registered. No null checks, no defaults.
+// Failures never surface here: offline, degraded, or timed out,
+// the SDK serves the FallbackAction you registered. A null Action
+// marks the baseline control group, and a null result means
+// tracking is disabled; both show your control experience.
 var decision = await PIO.GetDecision("Tutorial");
 if (this == null) return; // Destroyed during the await: stop.
-var action = decision.Action;
+var action = decision?.Action ?? "Short";
 ```
 {/* /snippet:decision */}
 
@@ -72,4 +73,4 @@ PIO.TrackEvent("tutorial_complete");
 
 ## 6. Verify
 
-Run the game, then confirm events arrive: the `PIO/Verify Integration` editor menu and the dashboard's integration-health view.
+Run the game and exercise the decision point. Then confirm the round trip: the `PIO/Verify Integration` editor menu, or the dashboard's integration-health view, shows events arriving and the next step if they are not.

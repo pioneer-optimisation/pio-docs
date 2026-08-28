@@ -3,10 +3,20 @@ title: "Configuration"
 description: "PioConfig, PioOptions, and the PioSettings asset."
 ---
 
-<Note>Under construction.</Note>
+Configuration splits in two: `PioConfig` carries the connection, `PioOptions` carries behaviour. Both go to `PIO.Init`.
 
-Will cover:
+## PioConfig
 
-- The `PioSettings` asset and the Setup Wizard
-- `PioConfig`: API key, account, project, action definitions
-- `PioOptions`: queueing, flush interval, decision timeout, heartbeat
+Three identifiers are required and validated at initialisation: `ApiKey`, `AccountId`, and `ProjectId`, all from your project's dashboard settings. `Actions` registers every action definition your game requests, each with a non-empty `FallbackAction`.
+
+The remaining fields are optional. `EnableDebugLogging` gives verbose `[PIO]` console output while integrating, `ShowDebugOverlay` shows the on-device debug panel, and `SessionTimeoutMinutes` (default 5) controls when background time starts a new session. Leave the `*UrlOverride` fields blank in shipping builds; they exist for internal test rigs.
+
+## PioOptions
+
+Behavioural knobs, all with sensible defaults: tracking (see [Consent & privacy](/integration/consent-and-privacy)), offline mode, event-queue size, flush cadence, and the decision timeout. The [Offline & lifecycle](/integration/offline-and-lifecycle) page shows them in code.
+
+## The PioSettings asset
+
+Prefer configuring in the Inspector? Run `PIO/Setup Wizard` to generate a `PioSettings` asset at `Assets/Resources/PioSettings.asset`, then call the zero-argument `PIO.Init()`. The asset carries the connection fields, the options, and an `AutoInitialize` toggle (off by default). Action definitions stay in code; Unity cannot serialise a dictionary in the Inspector.
+
+Ship exactly one `PioSettings` asset. `Resources.Load` returns the first match in any `Resources/` folder, so a duplicate silently shadows the real one. Explicit arguments to the two-argument `Init` take precedence over the asset.

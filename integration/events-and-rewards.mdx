@@ -3,10 +3,39 @@ title: "Events & rewards"
 description: "Track events; rewards are derived from the values you send."
 ---
 
-<Note>Under construction.</Note>
+## Tracking
 
-Will cover:
+`PIO.TrackEvent` enqueues synchronously and returns immediately; a background worker flushes batches every `FlushIntervalSeconds`. The queue persists to on-device storage, so events survive a force-quit and flush on the next launch.
 
-- `PIO.TrackEvent` and the valued overload
-- Canonical event helpers (`PIO.Events.*`)
-- How rewards are derived platform-side from valued events; there is no separate reward call
+{/* snippet:events */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs
+// A valued event: the value feeds reward derivation.
+PIO.TrackEvent("session_score", 1250);
+
+// Canonical helpers cover the common vocabulary.
+PIO.Events.TutorialComplete();
+PIO.Events.IapPurchase();
+```
+{/* /snippet:events */}
+
+The valued overload writes its number to the event's `event_value` field. Values must be non-negative and finite; negative, NaN, and infinite values are warned and dropped.
+
+## The rules
+
+- Event types starting with `pio.` are reserved for the SDK and hard-dropped with a warning.
+- Unregistered event types still flow through, with a console warning; register them in the dashboard to suppress it. Prototyping before registering is fine.
+- Before `Init` completes, or while tracking is disabled, `TrackEvent` is a silent no-op.
+
+## Canonical helpers
+
+`PIO.Events` names the common mobile-game vocabulary so event types stay consistent across your codebase.
+
+- Levels: `LevelStart`, `LevelComplete`, `LevelFail`, `LevelQuit`
+- Tutorial: `TutorialStart`, `TutorialStepComplete`, `TutorialComplete`, `TutorialSkip`
+- Monetisation: `IapShown`, `IapPurchase`, `IapCancelled`, `AdOffered`, `AdStarted`, `AdCompleted`, `AdSkipped`
+- Economy: `CurrencyEarned`, `CurrencySpent`, `ItemUnlocked`, `AchievementUnlocked`
+- Engagement: `RatingPromptShown`, `RatingPromptAccepted`, `SocialShare`
+
+## Where rewards come from
+
+There is no reward call. PIO derives reward signals platform-side from the valued events you send, according to your project's reward configuration. [Reward design](/concepts/reward-design) covers choosing the events and values worth optimising for.

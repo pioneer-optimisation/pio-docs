@@ -3,10 +3,14 @@ title: "Reward design"
 description: "Turning your game's events into a learning signal."
 ---
 
-<Note>Under construction.</Note>
+PIO learns from the valued events your game already sends. There is no reward call: your project's reward configuration defines which events matter, how their values combine, and over what window, and the platform derives the reward from that.
 
-Will cover:
+## Choosing the signal
 
-- Valued events as the reward source
-- Reward presets (FTUE) and custom reward configuration
-- Common pitfalls: sparse signals, misaligned values
+Optimise for the outcome you actually want, observed within a window you can wait for. Reward presets cover the common cases, such as first-time-user-experience completion; custom configurations combine your own valued events.
+
+## Pitfalls
+
+- Sparse signals: an event that fires for one player in a thousand gives the model little to learn from. Prefer outcomes most players reach.
+- Misaligned values: the model optimises exactly what the values say. If `level_complete` sends 1.0 for a win and 0.0 for a loss, wins are the objective, nothing subtler.
+- Dropped values: negative, NaN, and infinite event values never enter the queue, so a signal encoded as negative numbers silently vanishes.

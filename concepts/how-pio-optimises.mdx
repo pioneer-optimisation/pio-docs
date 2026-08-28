@@ -3,10 +3,10 @@ title: "How PIO optimises"
 description: "Baseline first, learned models as they prove out."
 ---
 
-<Note>Under construction.</Note>
+Every project starts safe. A baseline model represents your game as it is: control-group players get your default actions, and the experiment has a control worth trusting.
 
-Will cover:
+Learned models train on the decisions and valued events your game sends. They take traffic only after passing readiness gates: enough decisions, events, and players observed, against thresholds set by policy. Until a model is ready, it cannot be activated; the dashboard shows each unmet requirement with its observed and required counts, and what to do next.
 
-- Baseline vs learned models, and how traffic shifts between them
-- Readiness and calibration gates before a model takes traffic
-- What the dashboard numbers mean, and when they are not yet meaningful
+Traffic then shifts deliberately, not automatically to 100%. The control group persists so results stay measurable, which is why your code always handles the baseline case: a null `Action` is the control arm, not an error.
+
+The numbers you read in the dashboard carry the same discipline. A metric without enough data behind it is annotated as not yet meaningful rather than presented as a result.

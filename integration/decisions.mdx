@@ -3,11 +3,56 @@ title: "Decisions"
 description: "Request a decision, apply the returned action, read typed payloads."
 ---
 
-<Note>Under construction.</Note>
+## Action definitions
 
-Will cover:
+An action definition is a decision point with a fixed set of candidate actions. Define it in the dashboard, where its default action becomes the fallback that code generation bakes into `PioActions.All`. Register the same key in `PioConfig.Actions` with a `FallbackAction`, the action your game uses when the backend is unreachable.
 
-- Defining action definitions and candidate actions
-- `PIO.GetDecision` and `DecisionResult`
-- Typed payload accessors and payload versioning
-- Decision sources: worker, baseline, fallback
+## Requesting
+
+`PIO.GetDecision(key)` requires an initialised SDK and a registered key; it throws `ArgumentException` for an unregistered key and `InvalidOperationException` before `Init` completes. Gate calls on `PIO.IsReady`. Each call auto-emits a decision event and increments a per-action counter included in future state snapshots.
+
+## Reading the result
+
+Branch on `Source`; there are exactly three, and the SDK never leaves you without an answer.
+
+{/* snippet:decision-sources */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs
+var d = await PIO.GetDecision("Tutorial");
+if (this == null) return;
+switch (d?.Source)
+{
+    case DecisionSource.Worker:     // model-sampled action
+    case DecisionSource.Fallback:   // backend unreachable: your registered fallback
+        Apply(d.Action);
+        break;
+    case DecisionSource.Baseline:   // control group: Action is null
+    default:                        // null result: tracking is disabled
+        Apply("Short");             // your control experience
+        break;
+}
+```
+{/* /snippet:decision-sources */}
+
+A `Fallback` decision arrives when the backend is unreachable, times out past `DecisionTimeoutMs`, or authentication has not succeeded. A `Baseline` decision means this player is in the control group: `Action` is null, and you show your control experience. The SDK records the arm on every decision either way. The call itself returns null only when tracking is disabled. Cancelling your own token rethrows `OperationCanceledException` rather than falling back.
+
+## Payloads
+
+An action option can carry a payload: difficulty curves, copy, discount percentages, edited in the dashboard and delivered with the decision. The model still chooses among the same option keys; the payload is opaque to training. You retune numbers server-side with no client release and no retraining.
+
+{/* snippet:payload-getters */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs
+// The option key selects the arm; the numbers ride the payload,
+// edited in the dashboard with no client release. Every getter is
+// total: missing payload, missing key, or wrong type returns the
+// default you pass.
+var difficulty = await PIO.GetDecision("FirstLevelDifficulty");
+if (this == null) return;
+if (difficulty == null) return; // Tracking disabled: nothing to read.
+var enemyHealth = difficulty.GetFloat("enemy_health", 1f);
+var introCopy = difficulty.GetString("intro_copy", "Welcome");
+```
+{/* /snippet:payload-getters */}
+
+Every getter is total. A missing payload, missing key, or type mismatch returns the default you pass, so a client built against an older schema keeps running. Fallback decisions carry no payload; their getters return your defaults.
+
+For compile-time names and types, generate typed payload classes with `PIO/Generate Code Constants`; the [API reference](/api-reference) documents the generated shapes and the schema-drift warning that keeps them honest.

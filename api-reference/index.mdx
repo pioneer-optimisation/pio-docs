@@ -1,8 +1,388 @@
 ---
 title: "Unity SDK reference"
-description: "The complete public API of the PIO Unity SDK."
+description: "Every public symbol in the PIO Unity SDK, generated from the SDK's canonical reference."
 ---
 
-<Note>Under construction. The reference is generated from the SDK source per release; it is never hand-edited.</Note>
+{/* Generated from pio-unity-sdk Documentation~/public-api.md (v0.3.2) by scripts/sync-api-reference.mjs. Do not edit here. */}
 
-Will cover the full public surface: `PIO`, `PioConfig`, `PioOptions`, `PioSettings`, `DecisionResult`, `PIO.Events`, and `PioError`.
+<Note>Generated from the SDK's canonical reference at v0.3.2. Fixes belong in pio-unity-sdk, not here.</Note>
+
+This document catalogues every public symbol in the SDK. It is the V1 surface:
+the compatibility baseline for future versions.
+
+## Conventions
+
+| Convention | Rule |
+|------------|------|
+| Namespace | `PIO` (all public types) |
+| Entry point | `PIO` static class; no other public class exposes behaviour |
+| Async public | `Task` / `Task<T>` (never `UniTask`) |
+| Threading | All public members: call from the Unity main thread only. Callbacks and continuations resume on the main thread |
+| IDs | ULID (Crockford base32, 26 chars). Never `Guid.NewGuid()` |
+| Access | Non-public types are `internal`. `InternalsVisibleTo` is granted to `PIO.Tests.Runtime` and `PIO.Tests.Editor` only |
+
+---
+
+## `PIO` (static class)
+
+The sole public entry point. Studios interact with the SDK exclusively through
+this class.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `State` | `PioState` | Current lifecycle state |
+| `IsReady` | `bool` | `true` when `State == Ready` |
+| `UserId` | `string` | Stable ULID user ID, persisted to disk. `null` before init completes |
+| `SessionId` | `string` | ULID session ID. A new session starts after `SessionTimeoutMinutes` of background time. `null` before init completes |
+| `TrackingEnabled` | `bool` | Whether data collection is active |
+| `IsOffline` | `bool` | `true` when running in offline/mock mode (no network; local fallback decisions) |
+
+All properties are read-only and safe to read at any time.
+
+### Events
+
+#### `event Action<PioError> OnError`
+
+Raised when the SDK encounters an error: auth, a decision fallback, event
+ingestion, an evicted queue, or an unhandled exception inside SDK code. Always
+fires on the Unity main thread, so handlers may touch Unity APIs. Standard C#
+event: subscribe with `+=`, unsubscribe with `-=`. Subscribe **before** `Init`
+to catch init-time errors. See [error-handling.md](/integration/error-handling).
+
+### Methods
+
+#### `Init(PioConfig config, PioOptions options = null) → Task`
+
+Initialise the SDK. Resolves the stable user ID, authenticates with the
+inference Worker (when tracking is enabled), warms the connection, and starts the
+session.
+
+| Aspect | Detail |
+|--------|--------|
+| Thread | Main thread |
+| Idempotency | If `State == Ready`: no-op, logs a warning. If `State == Initializing`: awaits the in-flight init |
+| Throws | `ArgumentNullException` if `config` is null; `ArgumentException` if `ApiKey`, `AccountId`, or `ProjectId` is empty, or an `ActionDef` is null / has no `FallbackAction` |
+| Failure | Sets `State = Failed` and reports via `OnError`; the returned `Task` does **not** throw (the exception is captured internally) |
+| Cancellation | Not accepted; init is fire-once at boot |
+
+#### `Init() → Task`
+
+Zero-argument overload that loads a [`PioSettings`](#piosettings-scriptableobject)
+asset from `Resources/PioSettings.asset`, so no code configuration is required.
+Throws `InvalidOperationException` if no asset is present. For explicit config or
+secure runtime key injection, use the two-argument overload (its arguments take
+precedence over the asset).
+
+#### `SetTrackingEnabled(bool enabled) → Task`
+
+Toggle data collection at runtime (e.g. after a CMP consent change).
+
+| Aspect | Detail |
+|--------|--------|
+| Thread | Main thread |
+| Throws | `InvalidOperationException` if `State != Ready` |
+| `true → false` | Stops the auth refresh loop, purges the event queue |
+| `false → true` | Performs deferred auth + connection warming |
+| No-op | When the value matches the current state |
+
+See [cmp-integration.md](/integration/consent-and-privacy).
+
+#### `GetDecision(string actionDefKey, CancellationToken ct = default) → Task<DecisionResult>`
+
+Request a decision for a registered action definition.
+
+| Aspect | Detail |
+|--------|--------|
+| Thread | Main thread |
+| Throws | `ArgumentException` if `actionDefKey` is empty or not registered in `PioConfig.Actions`; `InvalidOperationException` if `State != Ready` |
+| Returns | A [`DecisionResult`](#decisionresult-sealed-class); `null` when tracking is disabled |
+| Timeout | If the Worker doesn't respond within `PioOptions.DecisionTimeoutMs`, returns `Source = Fallback` with the registered `FallbackAction` |
+| Cancellation | Cancelling `ct` rethrows `OperationCanceledException`; it does **not** produce a fallback |
+| Side effects | Auto-emits one decision event; increments the per-action decision counter included in future state snapshots |
+
+#### `TrackEvent(string eventType[, double value]) → void`
+
+Fire a custom game event, optionally with a non-negative numeric value.
+Enqueues synchronously and returns immediately.
+
+| Aspect | Detail |
+|--------|--------|
+| Thread | Main thread |
+| Not ready / tracking disabled | Silent no-op |
+| Reserved namespace | An `eventType` starting with `pio.` is warned and **hard-dropped** (reserved for SDK internal events) |
+| Unregistered type | Warns but **still enqueues** (permissive). Register it in pio-web to suppress the warning |
+| Empty registry | Fully permissive: all event types accepted |
+| Invalid value | Negative, NaN, and infinite values are warned and dropped |
+
+The numeric overload writes `value` to the top-level `event_value` field.
+
+#### `SetState(string key, object value) → void`
+
+Set a custom game state value included in the next `GetDecision` snapshot.
+
+| Aspect | Detail |
+|--------|--------|
+| Thread | Main thread |
+| Not ready | Warns and returns |
+| Types | `string`, `int`, `long`, `float`, `double`, `bool`, or `null`; other types are warned and dropped |
+| Lifecycle | Per-session (cleared on re-init) |
+| Visibility | Immediate: `SetState` then `GetDecision` in the same frame sees the value |
+
+Keys should match state definitions registered in pio-web (e.g.
+`std_level_index`).
+
+---
+
+## `PioConfig` (sealed class)
+
+Connection configuration passed to `PIO.Init`. The three string identifiers are
+required and validated at init time. Use object-initializer syntax.
+
+| Property | Type | Default | Required | Description |
+|----------|------|---------|----------|-------------|
+| `ApiKey` | `string` | (none) | Yes | API key from the PIO dashboard |
+| `AccountId` | `string` | (none) | Yes | Account identifier |
+| `ProjectId` | `string` | (none) | Yes | Project identifier |
+| `Environment` | `PioEnvironment` | `Production` | No | Target inference Worker |
+| `Actions` | `Dictionary<string, ActionDef>` | empty | Yes | Registered action definitions, keyed by action-def identifier. Each value needs a non-empty `FallbackAction` |
+| `EnableDebugLogging` | `bool` | `false` | No | Enable `[PIO]` diagnostic logs |
+| `ShowDebugOverlay` | `bool` | `false` | No | Show the in-game debug overlay (state, queue, last decision, last error). A development aid; see [error-handling.md](/integration/error-handling) |
+| `SessionTimeoutMinutes` | `int` | `5` | No | Background minutes before a new session starts |
+| `BaseUrlOverride` | `string` | `null` | No | **Internal/test only.** Overrides the Worker base URL (auth, infer, warm); bypasses `Environment` |
+| `IngestBaseUrlOverride` | `string` | `null` | No | **Internal/test only.** Overrides the ingest base URL (events/batch) |
+| `WebBaseUrlOverride` | `string` | `null` | No | **Internal/test only.** Overrides the pio-web base URL (event-definition fetch) |
+
+---
+
+## `ActionDef` (sealed class)
+
+A single action space registered in `PioConfig.Actions`.
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `FallbackAction` | `string` | Yes | Action returned when the Worker is unreachable or times out. Must be a valid action key for this action definition |
+
+---
+
+## `PioOptions` (sealed class)
+
+Behavioural options, separate from connection config. Optional second argument to
+`PIO.Init`.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `TrackingEnabled` | `bool` | `true` | Whether the SDK may make network requests and collect data. `false` skips auth/warming entirely; `GetDecision` returns `null` and events are dropped |
+| `OfflineMode` | `bool` | `false` | Run with no network: init is instant, `GetDecision` returns the registered fallback instantly (`Source = Fallback`), events enqueue but never flush. `TrackingEnabled = false` takes precedence |
+| `MaxEventQueueSize` | `int` | `10000` | Maximum events stored on-device. The oldest are evicted past the cap |
+| `FlushIntervalSeconds` | `float` | `30` | Seconds between background flush attempts |
+| `DecisionTimeoutMs` | `int` | `2000` | Per-decision Worker timeout before falling back. Increase on high-latency networks |
+
+---
+
+## `PioSettings` (ScriptableObject)
+
+Inspector-editable configuration asset at `Assets/Resources/PioSettings.asset`,
+loaded by the zero-argument `PIO.Init()`. The **Setup Wizard** generates it.
+Carries the `PioConfig` connection fields and the `PioOptions` knobs, plus
+`AutoInitialize` (auto-init on game start, off by default). `PioConfig.Actions`
+stays code-only: Unity can't serialise a dictionary in the Inspector.
+
+Ship **exactly one** `PioSettings` asset: `Resources.Load` returns the first one
+found in any `Resources/` folder, so a duplicate silently shadows the real one.
+
+| Member | Description |
+|--------|-------------|
+| `ToConfig()` | Maps the asset's connection fields to a `PioConfig` (Actions left empty) |
+| `ToOptions()` | Maps the asset's behavioural fields to a `PioOptions` |
+| `Load()` | Loads the asset from Resources, or `null` if none is present |
+
+---
+
+## `DecisionResult` (sealed class)
+
+Immutable result from `PIO.GetDecision`. Studios cannot construct instances; they
+branch on `Source`.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Source` | `DecisionSource` | Where the decision originated |
+| `Action` | `string` | The action key to execute. `null` when `Source == Baseline` |
+| `DecisionId` | `string` | ULID identifying this decision. Always populated |
+| `PayloadJson` | `string` | Raw JSON of the chosen option's payload. `null` when the option has none |
+| `PayloadVersion` | `int` | Version stamp of `PayloadJson`. `0` when there is no payload |
+
+### Option payload
+
+An action option can carry a **payload** (difficulty curves, popup copy, discount
+percentages) edited in the dashboard and delivered with the decision. The model
+still chooses among the same option keys; the payload is opaque to training. So a
+studio retunes numbers server-side with **no client release and no retraining**.
+
+Prefer the **generated typed payload classes** (`PIO > Generate Code Constants`),
+which give you compile-time names and types. The getters below are the low-level
+escape hatch they are built on, and the right tool for a `json` parameter.
+
+#### Generated payload classes
+
+Codegen writes one `{Action}Payload` class per action that declares parameters,
+into `Assets/PIO.Generated/PioPayloads.cs`, with **the schema's defaults compiled
+in**:
+
+```csharp
+var d = await PIO.GetDecision("Tutorial");
+var payload = TutorialPayload.From(d);
+
+enemy.Health *= payload.Difficulty;   // float, defaults to the schema's default
+pages         = payload.Pages;        // int
+copy          = payload.IntroCopy;    // string
+if (payload.Variant == TutorialPayload.VariantValues.Long) { ... }
+```
+
+`From(null)` is safe: every property then returns its compiled-in default, which
+is what you get when tracking is disabled.
+
+| Parameter kind | Generated member |
+|----------------|------------------|
+| `float` / `int` / `bool` / `string` | Typed property |
+| `enum` | `string` property + a nested `{Name}Values` class of `const string` choices |
+| `array<scalar>` | Typed array property (`float[]`, `int[]`, `bool[]`, `string[]`) |
+| `json` | `{Name}Json` raw-JSON `string` property, the documented trade-off for arbitrarily nested payloads |
+
+Enum choices are emitted as `const string`s rather than a C# `enum`: a value added
+in the dashboard later would have no enum member to map onto, and inventing one at
+runtime needs reflection, which is not AOT-safe.
+
+Generated code lands in `Assembly-CSharp`. If your game code lives in its own
+assembly definition, add a reference to the assembly containing `Assets/PIO.Generated`
+(or move the folder inside your asmdef) before using these classes.
+
+#### Schema drift
+
+The Editor compares the server's schema against `PioGeneratedSchema.json` on focus
+and on entering play mode, and warns when a parameter is **added, removed, or
+re-typed**, the changes that stale your generated code. Editing a parameter's
+*default* or description is not drift: defaults are re-read from the server on
+every decision. Regenerate to clear the warning.
+
+| Method | Returns |
+|--------|---------|
+| `GetString(key, default = null)` | Text of a `string`/`enum` parameter |
+| `GetFloat(key, default = 0f)` | A `float` parameter |
+| `GetInt(key, default = 0)` | An `int` parameter (accepts `3` or `3.0`) |
+| `GetBool(key, default = false)` | A `bool` parameter |
+| `GetJson(key)` | Raw JSON text of a `json` parameter (object or array); `null` otherwise |
+| `GetStringArray/GetFloatArray/GetIntArray/GetBoolArray(key, default = null)` | An `array<scalar>` parameter |
+
+```csharp
+var d = await PIO.GetDecision("FirstLevelDifficulty");
+
+// The option key still selects the arm...
+ApplyDifficultyPreset(d.Action);
+
+// ...but the numbers come from the dashboard, with your compiled-in
+// defaults used whenever the server has nothing to say.
+enemy.Health *= d.GetFloat("enemy_health", 1f);
+popup.Text   =  d.GetString("intro_copy", "Welcome!");
+```
+
+**Every getter is total: none of them throws.** A missing payload, a missing key,
+or a type mismatch returns the default you passed. That is the designed degradation
+path: an app built against an older parameter schema keeps running on its
+compiled-in defaults, and so does one talking to a Worker that predates payloads.
+
+Offline, timed-out, and other fallback decisions have no payload source, so their
+getters return your defaults. A cold-start decision carries a payload if the server
+sent one with it.
+
+---
+
+## `PioError` (sealed class)
+
+An error surfaced via `PIO.OnError`. Studios receive instances; they never
+construct them. Compare `Code` against [`PioErrorCodes`](#pioerrorcodes-static-class).
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Severity` | `PioErrorSeverity` | How serious the error is |
+| `Code` | `string` | Stable code, one of the `PioErrorCodes` values |
+| `Message` | `string` | Human-readable summary |
+| `Details` | `string` | Optional additional context. May be `null` |
+| `Exception` | `System.Exception` | The underlying exception when available. May be `null` |
+
+---
+
+## `PioErrorCodes` (static class)
+
+Stable string codes for `PioError.Code`. The set is fixed for the cloud-only
+architecture.
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `AuthFailed` | `AUTH_FAILED` | `/auth` returned 4xx or failed after retries |
+| `WorkerUnreachable` | `WORKER_UNREACHABLE` | Worker unreachable (network, DNS, connection refused) |
+| `WorkerTimeout` | `WORKER_TIMEOUT` | Worker did not respond within the decision timeout |
+| `WorkerServerError` | `WORKER_SERVER_ERROR` | Worker returned a 5xx |
+| `WorkerMalformedResponse` | `WORKER_MALFORMED_RESPONSE` | Worker response could not be parsed |
+| `EventQueueFull` | `EVENT_QUEUE_FULL` | Queue hit its cap and evicted the oldest events |
+| `EventValidationFailed` | `EVENT_VALIDATION_FAILED` | An event was dropped for failing validation |
+| `IngestionFailedPermanently` | `INGESTION_FAILED_PERMANENTLY` | Events dropped after exhausting ingestion retries |
+| `StateCollectorFailed` | `STATE_COLLECTOR_FAILED` | A state collector threw while building the snapshot |
+| `UnhandledException` | `UNHANDLED_EXCEPTION` | An unhandled exception was caught inside SDK code |
+
+---
+
+## Enums
+
+### `PioState`
+
+| Value | Meaning |
+|-------|---------|
+| `Uninitialized` | `Init` has not been called |
+| `Initializing` | Init in progress |
+| `Ready` | SDK operational |
+| `Failed` | Init failed; inspect logs and `OnError` |
+
+Transitions: `Uninitialized → Initializing → Ready`, or `Initializing → Failed`.
+
+### `DecisionSource`
+
+| Value | Meaning | `DecisionResult.Action` |
+|-------|---------|-------------------------|
+| `Worker` | Sampled by the inference Worker's policy | The sampled action key |
+| `Fallback` | Worker unreachable/timed out | The registered `FallbackAction` |
+| `Baseline` | User is in the A/B control group | `null`; show your control experience |
+
+### `PioErrorSeverity`
+
+| Value | Meaning |
+|-------|---------|
+| `Info` | Informational; reserved for future use |
+| `Warning` | Degraded operation the SDK recovered from (a single fallback, a dropped event) |
+| `Error` | A meaningful failure to investigate (auth failed, ingestion gave up, unhandled exception) |
+
+### `PioEnvironment`
+
+| Value | Worker domain |
+|-------|---------------|
+| `Production` | `inference.pioneeroptimisation.com` |
+
+Studios only target `Production`. Internal/test rigs use the `*UrlOverride`
+fields on `PioConfig`.
+
+---
+
+## Stability
+
+**Pre-1.0 (current):** minor version bumps may include source-breaking changes to
+the public API. Binary compatibility is not guaranteed. Pin to exact versions.
+
+**Post-1.0 (future):** semver applies: patch = bug fix, minor = additive only,
+major = breaking. The symbols above become the compatibility baseline.
+
+## Assembly visibility
+
+`internal` members of `PIO.Runtime` are visible only to `PIO.Tests.Runtime` and
+`PIO.Tests.Editor`, enforced in `Runtime/Properties/AssemblyInfo.cs`. No other
+assembly has access.

@@ -3,10 +3,21 @@ title: "Verify your integration"
 description: "Confirm that decisions flow in and events flow out."
 ---
 
-<Note>Under construction.</Note>
+The SDK and the dashboard verify the same facts from opposite ends. Two minutes here saves a support thread later.
 
-Will cover the verification loop:
+## In the Editor
 
-- Run your game and exercise a decision point
-- Confirm events arrive: the `PIO/Verify Integration` editor menu and the dashboard's integration-health view
-- What each health-check state means, and the next step it points to
+Run your game in Play mode and exercise a decision point, then check:
+
+- The console, with `EnableDebugLogging` on: each decision logs its source and action.
+- `PIO/Verify Integration`: checks your configuration and connection from inside the Editor.
+- `PIO/Diagnostics/Inspector`: live SDK state, session, last decision, and event-queue depth.
+- `PIO/Diagnostics/Event Log`: every event the SDK enqueues, as it happens.
+
+## In the dashboard
+
+The integration-health view tracks your project through three states: no events yet, events gone stale, and integrated with events streaming. Each state names the next step. It also shows the last event received, the SDK version it came from, and which of your registered event types have been seen.
+
+## If decisions work but events never arrive
+
+Decisions and events travel to different services. A stale or misconfigured URL override sends events to the wrong host: leave every `*UrlOverride` field blank in shipping builds.

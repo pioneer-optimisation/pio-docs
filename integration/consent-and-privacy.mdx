@@ -3,10 +3,31 @@ title: "Consent & privacy"
 description: "Tracking consent, child-directed apps, and CMP integration."
 ---
 
-<Note>Under construction.</Note>
+PIO shows no consent UI. Your consent management platform owns the user-facing experience; the SDK trusts a single boolean. While `TrackingEnabled` is false, zero bytes leave the device: no authentication, no decisions, no events.
 
-Will cover:
+{/* snippet:consent */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs
+// Consent-required regions: start silent and let your CMP decide.
+await PIO.Init(BuildConfig(), new PioOptions { TrackingEnabled = false });
 
-- `PIO.SetTrackingEnabled` and consent-gated behaviour
-- Child-directed attestation
-- Integrating with a consent management platform
+// When the CMP resolves, pass its answer: true opens the tap,
+// false keeps it shut.
+bool analyticsConsent = ResolveConsentFromCmp();
+await PIO.SetTrackingEnabled(analyticsConsent);
+```
+{/* /snippet:consent */}
+
+## The transitions
+
+- The default is `TrackingEnabled = true`, matching the convention of comparable Unity SDKs. Studios in consent-required regions must start with `false` and wait for their CMP.
+- Turning tracking off purges any unflushed events from the local queue: withdrawal of consent is as complete as giving it.
+- Turning tracking on performs the deferred authentication and connection warming, then resumes normal operation.
+- While disabled, `GetDecision` returns null immediately with no network call; apply your own default for that action.
+
+## Child-directed projects
+
+Whether a project is child-directed is attested at project creation in the dashboard, and the answer rides along with the data the SDK collects. It cannot be set from code.
+
+## Wiring a CMP
+
+The pattern is the same for every vendor: initialise with tracking off, subscribe to the CMP's consent-changed callback, and call `SetTrackingEnabled` with the resolved analytics consent. The SDK repository's documentation folder carries worked examples for Didomi, OneTrust, Usercentrics, and Axeptio.

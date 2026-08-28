@@ -3,10 +3,43 @@ title: "Error handling"
 description: "Every error carries a code, a severity, and a next step."
 ---
 
-<Note>Under construction.</Note>
+The SDK fails soft. A decision that cannot reach the backend returns your fallback action. A dropped event is logged rather than thrown, and an exception inside SDK code is caught before it reaches your game loop. Everything worth knowing surfaces through one channel.
 
-Will cover:
+{/* snippet:onerror */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs
+// Subscribe before Init to catch init-time failures.
+PIO.OnError += e =>
+    Debug.LogWarning($"[PIO] {e.Severity} {e.Code}: {e.Message}");
+```
+{/* /snippet:onerror */}
 
-- The `OnError` event and `PioError`
-- Error codes and severities, and what to do about each
-- Failure behaviour: your game never blocks on PIO
+`OnError` always fires on the Unity main thread, so handlers may touch Unity APIs. A throwing handler is caught and logged. Unsubscribe with `-=` when the subscriber is destroyed.
+
+## Severities
+
+`Warning` means degraded but recovered: a single fallback, a dropped event. Log it and watch the rate. `Error` means a failure to investigate: authentication failed, ingestion gave up, an unhandled SDK exception. `Info` is reserved.
+
+## Codes worth knowing
+
+Branch on `PioError.Code` against the `PioErrorCodes` constants, never on message text.
+
+| Code | Severity | What to do |
+|------|----------|------------|
+| `AUTH_FAILED` | Error | Check `ApiKey`, `AccountId`, `ProjectId`. Decisions fall back until auth recovers |
+| `WORKER_UNREACHABLE` | Warning | Nothing required; the fallback was served. Persistent? Check connectivity |
+| `WORKER_TIMEOUT` | Warning | Consider raising `DecisionTimeoutMs` on high-latency networks |
+| `WORKER_SERVER_ERROR` | Warning | Transient server-side; the fallback was served |
+| `WORKER_MALFORMED_RESPONSE` | Warning | Usually version skew; report it |
+| `EVENT_QUEUE_FULL` | Warning | Raise `MaxEventQueueSize` or flush more often |
+| `EVENT_VALIDATION_FAILED` | Warning | Check the event type is registered in the dashboard |
+| `INGESTION_FAILED_PERMANENTLY` | Error | Investigate connectivity and ingest health |
+| `STATE_COLLECTOR_FAILED` | Warning | The decision proceeded with a partial snapshot; report it |
+| `UNHANDLED_EXCEPTION` | Error | Report it, with message and stack |
+
+## What reports automatically
+
+No `try/catch` needed around SDK calls. Fallbacks, timeouts, auth and ingestion failures, and internal exceptions are all captured and surfaced. Each is also sent to PIO as an `sdk_error` event (code, severity, message, normalised stack, no PII), de-duplicated by stack hash. There is no third-party crash reporter in the SDK.
+
+## Debugging tools
+
+`PIO/Diagnostics/Inspector` and `PIO/Diagnostics/Event Log` cover Play mode; `ShowDebugOverlay` puts a live panel on device builds. [Editor tools](/integration/editor-tools) has the tour.

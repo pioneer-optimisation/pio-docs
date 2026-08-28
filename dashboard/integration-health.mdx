@@ -3,6 +3,8 @@ title: "Integration health"
 description: "A live readout of your integration, with next steps."
 ---
 
-<Note>Under construction.</Note>
+Integration health reduces to three states: no events yet, events gone stale, and integrated. A streaming indicator shows events arriving right now. Each state names its next step, so the readout is an instruction, not just a status.
 
-Will cover the health-check ladder, what each state means, and the recommended fix for each.
+Alongside the state: the last event received and the SDK version that sent it. Event-type coverage shows which of your registered types have been seen, and which arriving types are unregistered.
+
+The same facts back the `PIO/Verify Integration` editor tool, the dashboard, and the MCP integration tools, so every surface agrees.
