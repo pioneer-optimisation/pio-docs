@@ -3,7 +3,7 @@ title: "Connect the PIO MCP server"
 description: "Give your coding agent live access to project status, integration health, and project setup."
 ---
 
-The PIO MCP server lets a coding agent check its own work. After the agent writes the integration and runs the game, it calls `check_integration` and reads the same facts the dashboard shows: whether events arrived, which event types are still missing, and the next step. Six tools cover the loop from creating a project to confirming that decisions flow in and events flow out.
+The PIO MCP server lets a coding agent check its own work. After the agent writes the integration and runs the game, it calls `check_integration`. The response carries the same facts the dashboard shows: whether events arrived, which event types are missing, and the next step. Six tools cover the loop from creating a project to confirming that decisions flow in and events flow out.
 
 The server speaks MCP over Streamable HTTP at one endpoint:
 
@@ -66,7 +66,7 @@ Treat the token as a secret. Keep it in an environment variable or the client's 
     ```
   </Tab>
   <Tab title="Cursor and JSON clients">
-    Add the server to `mcp.json` (project-level `.cursor/mcp.json` or the global file). Omit `headers` to use OAuth.
+    Add the server to `mcp.json`. Omit `headers` to use OAuth. A literal token belongs only in the global file (`~/.cursor/mcp.json`): the project-level `.cursor/mcp.json` is committed with the repository, so never put a token there.
 
     ```json
     {
@@ -119,7 +119,7 @@ Every tool response is a JSON document. When a tool cannot do what was asked it 
 
 ### check_integration
 
-This is the tool the agent runs after each change. The `rungs` array is the same ladder as the dashboard's integration-health view; each rung carries its facts and, when it is not yet satisfied, a `next_step` with a message, the dashboard path, and a link into these docs. The top-level `next_step` is the one thing to do now. `coverage` lists the event types the project expects, the ones seen, and any unregistered types the game is sending.
+This is the tool the agent runs after each change. The `rungs` array is the same ladder as the dashboard's integration-health view, and each rung carries its facts. An unsatisfied rung adds a `next_step` with a message, the dashboard path, and a link into these docs. The top-level `next_step` is the one thing to do now. `coverage` lists the event types the project expects, the ones seen, and any unregistered types the game is sending.
 
 ```json
 {
