@@ -3,6 +3,19 @@ title: "llms.txt"
 description: "Machine-readable entry points to everything on this site."
 ---
 
-<Note>Under construction.</Note>
+Every page on this site exists in a form built for an agent to read. Three endpoints cover the map, the whole, and the page.
 
-This site serves `llms.txt` and `llms-full.txt`, and every page is fetchable as markdown. This page will explain what is there and how to point an agent at it.
+| Endpoint | Contents |
+| --- | --- |
+| `/llms.txt` | One line per page: title, URL, and a one-sentence description. The map an agent reads first. |
+| `/llms-full.txt` | The full site as one markdown document. |
+| any page URL + `.md` | That page as plain markdown, for example `/getting-started/quickstart.md`. |
+
+## Pointing an agent at the docs
+
+Give the agent `/llms.txt` and let it fetch the pages it needs; that keeps its context small and its reading current. Paste `/llms-full.txt` only when the agent cannot fetch URLs.
+
+Two boundaries worth stating:
+
+- These endpoints carry documentation, not project state. Live integration facts (events received, checklist state, model readiness) come from the [MCP server](/ai/mcp-server).
+- The [agent integration guide](/ai/agent-integration-guide) is the executable path through these docs; hand an agent that page rather than the whole site when the task is an integration.
