@@ -1,8 +1,9 @@
+/
 /ai/agent-integration-guide
 /ai/integrate-with-your-ai
 /ai/llms-txt
 /ai/mcp-server
-/api-reference/index
+/api-reference
 /concepts/action-spaces-and-payloads
 /concepts/how-pio-optimises
 /concepts/reward-design
@@ -11,7 +12,6 @@
 /dashboard/onboarding-checklist
 /getting-started/quickstart
 /getting-started/verify-your-integration
-/index
 /integration/configuration
 /integration/consent-and-privacy
 /integration/decisions

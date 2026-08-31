@@ -10,7 +10,13 @@ const docs = JSON.parse(fs.readFileSync(path.join(root, "docs.json"), "utf8"));
 
 const pages = [];
 const walk = (node) => {
-  if (typeof node === "string") return pages.push("/" + node.replace(/^\/+/, ""));
+  if (typeof node === "string") {
+    // Mintlify serves index.mdx at the directory route: docs.json says
+    // "api-reference/index" but the public URL is /api-reference (and / for
+    // the root index). Record the route a link would actually use.
+    const route = "/" + node.replace(/^\/+/, "").replace(/(^|\/)index$/, "$1").replace(/\/$/, "");
+    return pages.push(route === "" ? "/" : route);
+  }
   if (Array.isArray(node)) return node.forEach(walk);
   if (node && typeof node === "object") {
     if (node.pages) walk(node.pages);
