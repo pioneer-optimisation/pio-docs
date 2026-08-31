@@ -6,7 +6,7 @@
 #
 # Deliberately no auto-PR: a red run means either the SDK or the docs is
 # wrong, and deciding which is the point of the check. GitHub-hosted, node
-# only — no Unity, no self-hosted runner dependency.
+# only: no Unity, no self-hosted runner dependency.
 name: docs-drift
 
 on:
@@ -57,7 +57,13 @@ jobs:
 
       - name: Brand lint (baseline stays empty)
         working-directory: pio-docs
-        run: node bin/brand-lint
+        run: |
+          if [ -s config/brand_lint_baseline.txt ]; then
+            echo "brand-lint baseline must stay empty (AGENTS.md); found entries:"
+            cat config/brand_lint_baseline.txt
+            exit 1
+          fi
+          node bin/brand-lint
 
       - name: No broken links
         working-directory: pio-docs
