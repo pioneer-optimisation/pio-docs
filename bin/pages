@@ -1,0 +1,36 @@
+#!/usr/bin/env node
+// Page inventory (ENG-1102): flattens docs.json navigation into one path per
+// line, sorted. pages.txt is the committed artefact pio-web vendors to prove
+// every docs URL it emits exists here. --check exits 1 if pages.txt is stale.
+import fs from "node:fs";
+import path from "node:path";
+
+const root = path.join(import.meta.dirname, "..");
+const docs = JSON.parse(fs.readFileSync(path.join(root, "docs.json"), "utf8"));
+
+const pages = [];
+const walk = (node) => {
+  if (typeof node === "string") return pages.push("/" + node.replace(/^\/+/, ""));
+  if (Array.isArray(node)) return node.forEach(walk);
+  if (node && typeof node === "object") {
+    if (node.pages) walk(node.pages);
+    if (node.groups) walk(node.groups);
+    if (node.tabs) walk(node.tabs);
+  }
+};
+walk(docs.navigation);
+
+const next = [...new Set(pages)].sort().join("\n") + "\n";
+const file = path.join(root, "pages.txt");
+const current = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+
+if (process.argv.includes("--check")) {
+  if (current !== next) {
+    console.error("pages: pages.txt is stale; run bin/pages");
+    process.exit(1);
+  }
+  console.log(`pages: up to date (${pages.length} pages)`);
+} else {
+  fs.writeFileSync(file, next);
+  console.log(`pages: wrote ${pages.length} page(s) to pages.txt`);
+}
