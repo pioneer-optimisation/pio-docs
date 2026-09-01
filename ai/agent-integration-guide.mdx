@@ -3,7 +3,7 @@ title: "Agent integration guide"
 description: "The integration spec, written for a reader that executes it."
 ---
 
-<Note>The code on this page is extracted from a sample project that compiles against each SDK release. The guide cannot show code that does not build.</Note>
+<Note>The code on this page is extracted from a sample project that compiles against each SDK release. The guide cannot show code that does not build. Fence headers cite the sample source in the SDK repository; the pinned tag may not ship those files until the next release.</Note>
 
 This is the executable path through these docs, written for a coding agent with a human on hand for the few steps only a human can do. Follow the steps in order. Each ends with a check that either passes or names the fix.
 
@@ -55,71 +55,83 @@ Keep the API key out of version control. Put it in an ignored file or an environ
 
 ## Step 3: write the integration
 
-Create `Assets/Scripts/PioBootstrap.cs` with a MonoBehaviour that initialises once at startup. Register every action definition the game will request, each with a fallback action:
+Create `Assets/Scripts/PioBootstrap.cs` containing exactly this file. It initialises once at startup, registers the action definitions with fallbacks, surfaces errors while integrating, requests a decision, and tracks events:
 
-{/* snippet:init */}
-```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
-var config = new PioConfig
+{/* snippet:bootstrap */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/PioBootstrap.cs
+using System.Collections.Generic;
+using PIO;
+using UnityEngine;
+
+// The PIO class shares its name with the PIO namespace, so a script outside
+// the PIO namespace must bring the statics in explicitly.
+using static PIO.PIO;
+
+/// <summary>
+/// The agent integration guide's bootstrap, verbatim: attach to a GameObject
+/// named PIO in the first loaded scene, fill the credentials, press Play.
+/// Lives in the global namespace on purpose, so it compiles exactly as
+/// pasted into a fresh project.
+/// </summary>
+public class PioBootstrap : MonoBehaviour
 {
-    ApiKey = apiKey,
-    AccountId = accountId,
-    ProjectId = projectId,
-    Actions = new Dictionary<string, ActionDef>
+    [SerializeField] string apiKey = "";
+    [SerializeField] string accountId = "";
+    [SerializeField] string projectId = "";
+
+    async void Start()
     {
-        // The fallback serves whenever the backend cannot answer.
-        ["Tutorial"] = new ActionDef { FallbackAction = "Short" },
-    },
-};
+        // Surface every SDK error as a console line while integrating.
+        OnError += e =>
+            Debug.LogWarning($"[PIO] {e.Severity} {e.Code}: {e.Message}");
 
-await PIO.Init(config);
-if (this == null) return; // Destroyed during the await: stop.
-if (!PIO.IsReady)
-{
-    Debug.Log($"PIO init failed: {PIO.State}");
-    return;
+        var config = new PioConfig
+        {
+            ApiKey = apiKey,
+            AccountId = accountId,
+            ProjectId = projectId,
+            Actions = new Dictionary<string, ActionDef>
+            {
+                // The fallback serves whenever the backend cannot answer.
+                ["Tutorial"] = new ActionDef { FallbackAction = "Short" },
+            },
+        };
+
+        await Init(config);
+        if (this == null) return; // Destroyed during the await: stop.
+        if (!IsReady)
+        {
+            Debug.Log($"PIO init failed: {State}");
+            return;
+        }
+
+        // Ask at the decision point and apply the returned action. A null
+        // Action marks the baseline control group; a null result means
+        // tracking is disabled; both show your control experience.
+        var decision = await GetDecision("Tutorial");
+        if (this == null) return;
+        ApplyTutorialLength(decision?.Action ?? "Short");
+
+        // A valued event: the value feeds reward derivation.
+        TrackEvent("level_complete", 1.0);
+
+        // A bare occurrence, no value.
+        TrackEvent("tutorial_complete");
+    }
+
+    void ApplyTutorialLength(string action) =>
+        Debug.Log($"Tutorial length: {action}");
 }
 ```
-{/* /snippet:init */}
+{/* /snippet:bootstrap */}
+
+The `using static PIO.PIO;` line matters. The `PIO` class shares its name with the `PIO` namespace, so qualified calls like `PIO.Init` do not resolve from a script outside that namespace.
 
 Hand-off: each key you register must also exist as an action definition in the project, with its candidate actions. There is no MCP tool for this yet; your human creates them in the dashboard.
 
-While integrating, surface every SDK error as a console line you can read back from the log:
+Wire it into the game: add a GameObject named `PIO` to the first loaded scene and attach `PioBootstrap`. In the Editor this is a drag into the hierarchy; headless, edit the scene file, or ask your human to place it. A fresh project may have no scene at all. Create `Assets/Scenes/Main.unity`, give it the `PIO` GameObject, and register it as the first scene in `ProjectSettings/EditorBuildSettings.asset`; Unity scene files are plain YAML, so writing a minimal one by hand is legitimate.
 
-{/* snippet:onerror */}
-```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs
-// Subscribe before Init to catch init-time failures.
-PIO.OnError += e =>
-    Debug.LogWarning($"[PIO] {e.Severity} {e.Code}: {e.Message}");
-```
-{/* /snippet:onerror */}
-
-Request a decision at the decision point and apply the returned action:
-
-{/* snippet:decision */}
-```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
-// Failures never surface here: offline, degraded, or timed out,
-// the SDK serves the FallbackAction you registered. A null Action
-// marks the baseline control group, and a null result means
-// tracking is disabled; both show your control experience.
-var decision = await PIO.GetDecision("Tutorial");
-if (this == null) return; // Destroyed during the await: stop.
-var action = decision?.Action ?? "Short";
-```
-{/* /snippet:decision */}
-
-Track outcomes as events. Valued events feed reward derivation:
-
-{/* snippet:event */}
-```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
-// A valued event: the value feeds reward derivation.
-PIO.TrackEvent("level_complete", 1.0);
-
-// A bare occurrence, no value.
-PIO.TrackEvent("tutorial_complete");
-```
-{/* /snippet:event */}
-
-Wire it into the game: add a GameObject named `PIO` to the first loaded scene and attach `PioBootstrap`. In the Editor this is a drag into the hierarchy; headless, edit the scene file, or ask your human to place it.
+This guide configures the SDK in code. The SDK also offers a `PioSettings` asset (menu `PIO/Setup Wizard`), which the zero-argument `PIO.Init()` loads. The `PIO/Verify Integration` window expects that asset and reports a missing-settings failure even when a code-configured integration works; create the asset, or read past that one check.
 
 The whole change, for a game with one decision point:
 
@@ -127,13 +139,18 @@ The whole change, for a game with one decision point:
 | --- | --- |
 | `Packages/manifest.json` | Two dependency lines |
 | `Assets/Scripts/PioBootstrap.cs` | New file, the code above |
-| First loaded scene | One GameObject carrying `PioBootstrap` |
+| First loaded scene | One GameObject carrying `PioBootstrap`; the scene itself, when none exists |
 
 ## Step 4: run the game
 
 Enter Play mode and pass through the decision point, so the SDK initialises, serves a decision, and sends events.
 
-Headless, drive the same path with a PlayMode test run under `-runTests -testPlatform PlayMode`. The test awaits `PIO.Init`, requests a decision, tracks an event, then waits one flush interval so the queue ships. Write it against your own bootstrap code, and delete it after verification if the project does not keep tests.
+Headless, drive the same path with a PlayMode test run under `-runTests -testPlatform PlayMode`. Two pieces of setup come first:
+
+1. Add `com.unity.test-framework` to `Packages/manifest.json`; step 1's manifest does not include it.
+2. Test assemblies cannot reference the default `Assembly-CSharp`, so give `Assets/Scripts` its own assembly definition, then reference it from a test assembly under `Assets/Tests/PlayMode`.
+
+The test awaits `Init`, requests the decision, tracks an event, then waits one flush interval (30 seconds by default) so the queue ships. Write it against your own bootstrap code, and delete the test assembly after verification if the project does not keep tests.
 
 ## Step 5: verify
 
@@ -150,6 +167,6 @@ You are done when `check_integration` reports `status: "integrated"` with your e
 ## When something fails
 
 - Init fails: `PIO.State` names the phase, and the `OnError` line carries the code. Re-read the three credential values before touching code; most failures are a wrong or swapped id.
-- Attestation pending: events are refused until the child-directed question is answered. `check_integration` names it as the next step.
+- Attestation pending: init itself fails, and the console shows a JSON parse error from the auth call, nothing about attestation. `check_integration` names the real cause as its next step. Check attestation before debugging URLs or JSON.
 - Decisions arrive but events never do: decisions and events travel to different services. Leave every `*UrlOverride` field blank; see [Verify your integration](/getting-started/verify-your-integration).
 - Any MCP tool error returns `error`, `message`, and `next_step`. Act on `next_step` rather than retrying the same call.
