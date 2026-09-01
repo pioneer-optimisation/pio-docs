@@ -3,6 +3,8 @@ title: "Integrate with your AI"
 description: "Hand the PIO integration to Claude Code, Cursor, or any coding agent, in one paste."
 ---
 
+<Note>Under validation: a coding agent given only this prompt and a fresh Unity project must complete and verify the integration unaided. The page is final once that run passes.</Note>
+
 The prompt below hands the whole integration to a coding agent: install, credentials, code, run, verify. Paste it into an agent session opened in your Unity project's repository.
 
 Before you paste:
@@ -23,5 +25,3 @@ You are done when check_integration reports the integration streaming events, or
 ```
 
 What to expect: the agent edits `Packages/manifest.json`, adds one bootstrap script, places one GameObject in your startup scene, runs the game, and verifies the result. It stops to ask you at the human-only steps: attestation if it created the project, action definitions, and event-type registration.
-
-This prompt is tested. Before each SDK release, an agent given only it and a fresh Unity project must complete and verify the integration unaided.

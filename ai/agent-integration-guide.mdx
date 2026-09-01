@@ -140,7 +140,7 @@ Headless, drive the same path with a PlayMode test run under `-runTests -testPla
 With the MCP server, call `check_integration` after each run and read three things:
 
 - `status` and `streaming`: `never` means nothing has arrived yet; `integrated` with `streaming: true` means events are flowing now.
-- `coverage`: track the event types the project expects, listed in `coverage.expected`. Types under `unregistered` are being sent but were never registered, so they are dropped. Hand-off: your human registers them in the dashboard.
+- `coverage`: track the event types the project expects, listed in `coverage.expected`. Types under `unregistered` are arriving without being registered; they still flow through, with a console warning. Hand-off: your human registers them in the dashboard to keep the vocabulary deliberate.
 - `next_step`: the one thing to do now. Do it, run again, and check again.
 
 Without the MCP server, hand-off: your human opens [integration health](/dashboard/integration-health) and reads the same facts, or runs `PIO/Verify Integration` in the Editor.
