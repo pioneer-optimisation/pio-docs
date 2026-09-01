@@ -3,6 +3,25 @@ title: "Integrate with your AI"
 description: "Hand the PIO integration to Claude Code, Cursor, or any coding agent, in one paste."
 ---
 
-<Note>Under construction. When this page ships, the prompt below is validated weekly by pointing a coding agent at a fresh Unity project. "An agent can integrate PIO unassisted" is a *tested* property of these docs, not a claim.</Note>
+<Note>Under validation: a coding agent given only this prompt and a fresh Unity project must complete and verify the integration unaided. The page is final once that run passes.</Note>
 
-This page will contain a single copy-paste prompt block: where the docs live, the exact integration steps, and how the agent verifies its own work.
+The prompt below hands the whole integration to a coding agent: install, credentials, code, run, verify. Paste it into an agent session opened in your Unity project's repository.
+
+Before you paste:
+
+1. Recommended: [connect the PIO MCP server](/ai/mcp-server) in the same agent, so it can fetch its own credentials and check its own work.
+2. Otherwise, have the project's API key, account id, and project id from its settings page ready; the agent will ask you for them.
+
+```text
+Integrate the PIO Unity SDK into this Unity project.
+
+Fetch https://docs.pioneeroptimisation.com/ai/agent-integration-guide.md and follow it step by step. Every docs page is available as markdown by adding .md to its URL; the full page list is at https://docs.pioneeroptimisation.com/llms.txt.
+
+If the PIO MCP server is connected, use it: whoami to choose the project, get_api_key for credentials, and check_integration after each run until it reports events arriving. If it is not connected, ask me for the API key, account id, and project id, and I will read the dashboard for you at each verification.
+
+Stop and ask me at every step the guide marks as a hand-off: the child-directed attestation, action definitions, and event-type registration. Never commit the API key.
+
+You are done when check_integration reports the integration streaming events, or I confirm the dashboard shows them. Then tell me what you changed, the decision point you wired, and anything you needed that the docs or tools did not provide.
+```
+
+What to expect: the agent edits `Packages/manifest.json`, adds one bootstrap script, places one GameObject in your startup scene, runs the game, and verifies the result. It stops to ask you at the human-only steps: attestation if it created the project, action definitions, and event-type registration.

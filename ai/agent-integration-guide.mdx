@@ -3,11 +3,153 @@ title: "Agent integration guide"
 description: "The integration spec, written for a reader that executes it."
 ---
 
-<Note>Under construction.</Note>
+<Note>The code on this page is extracted from a sample project that compiles against each SDK release. The guide cannot show code that does not build.</Note>
 
-Will cover, in agent-executable form:
+This is the executable path through these docs, written for a coding agent with a human on hand for the few steps only a human can do. Follow the steps in order. Each ends with a check that either passes or names the fix.
 
-- Preconditions: Unity version, project state, credentials
-- Exact steps with file conventions and expected diffs
-- The verification loop: run the game, confirm events arrive, check integration health
-- The fallback path when the MCP server is not connected: verifying via the dashboard
+Two reading rules. Treat every account id and project id as an opaque string: read them from tool responses or from your human, never construct or guess one. Where a step says hand-off, stop, tell your human exactly what to do and where, and wait for their confirmation.
+
+## Preconditions
+
+- A Unity 2022.3 LTS or newer project that compiles cleanly.
+- Write access to `Packages/manifest.json`, `Assets/`, and the startup scene.
+- A PIO account, and a human who can reach its dashboard.
+- Recommended: the [PIO MCP server](/ai/mcp-server) connected. It provides `check_integration`, the live readout this guide's verification loop uses. Without it, each verification falls back to the dashboard through your human.
+
+## Step 1: install the SDK
+
+Add the SDK and its one dependency to `Packages/manifest.json`:
+
+```json Packages/manifest.json
+{
+  "dependencies": {
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2.5.11",
+    "com.pioneeroptimisation.sdk": "https://github.com/pioneer-optimisation/pio-unity-sdk.git#v0.3.2"
+  }
+}
+```
+
+The SDK is pre-1.0, so pin an exact tag, never a branch. [Installation & versioning](/integration/installation-and-versioning) carries the current tag and the upgrade rules.
+
+Check: the project compiles and `using PIO;` resolves. Without the Editor open, compile in batch mode, with `UNITY_EDITOR` set to the editor binary for the project's Unity version:
+
+```bash
+"$UNITY_EDITOR" -batchmode -nographics -quit -projectPath . -logFile -
+```
+
+Exit code 0 and no `error CS` lines in the log mean the install compiles.
+
+## Step 2: choose a project and collect credentials
+
+Three values connect the SDK to a project: `ApiKey`, `AccountId`, and `ProjectId`.
+
+With the MCP server:
+
+1. Call `whoami`. It names the account, your scopes, and the account's projects.
+2. Use the project your human names, or create one with `create_project`. A project you create is pending attestation. Hand-off: a member of the studio answers the child-directed question in the project's settings; events are refused until they do.
+3. Call `get_api_key` for the project. The response carries the API key and the account id. It needs an admin credential; a `forbidden` error names who can help. While attestation is pending the response says so, and the key cannot authenticate yet.
+
+Without the MCP server, hand-off: ask your human for all three values from the project's settings page in the dashboard.
+
+Keep the API key out of version control. Put it in an ignored file or an environment variable, and leave serialised credential fields empty in committed scenes and assets.
+
+## Step 3: write the integration
+
+Create `Assets/Scripts/PioBootstrap.cs` with a MonoBehaviour that initialises once at startup. Register every action definition the game will request, each with a fallback action:
+
+{/* snippet:init */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
+var config = new PioConfig
+{
+    ApiKey = apiKey,
+    AccountId = accountId,
+    ProjectId = projectId,
+    Actions = new Dictionary<string, ActionDef>
+    {
+        // The fallback serves whenever the backend cannot answer.
+        ["Tutorial"] = new ActionDef { FallbackAction = "Short" },
+    },
+};
+
+await PIO.Init(config);
+if (this == null) return; // Destroyed during the await: stop.
+if (!PIO.IsReady)
+{
+    Debug.Log($"PIO init failed: {PIO.State}");
+    return;
+}
+```
+{/* /snippet:init */}
+
+Hand-off: each key you register must also exist as an action definition in the project, with its candidate actions. There is no MCP tool for this yet; your human creates them in the dashboard.
+
+While integrating, surface every SDK error as a console line you can read back from the log:
+
+{/* snippet:onerror */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/GuideExamples.cs
+// Subscribe before Init to catch init-time failures.
+PIO.OnError += e =>
+    Debug.LogWarning($"[PIO] {e.Severity} {e.Code}: {e.Message}");
+```
+{/* /snippet:onerror */}
+
+Request a decision at the decision point and apply the returned action:
+
+{/* snippet:decision */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
+// Failures never surface here: offline, degraded, or timed out,
+// the SDK serves the FallbackAction you registered. A null Action
+// marks the baseline control group, and a null result means
+// tracking is disabled; both show your control experience.
+var decision = await PIO.GetDecision("Tutorial");
+if (this == null) return; // Destroyed during the await: stop.
+var action = decision?.Action ?? "Short";
+```
+{/* /snippet:decision */}
+
+Track outcomes as events. Valued events feed reward derivation:
+
+{/* snippet:event */}
+```csharp Samples~/BasicIntegration/Assets/Scripts/QuickstartBootstrap.cs
+// A valued event: the value feeds reward derivation.
+PIO.TrackEvent("level_complete", 1.0);
+
+// A bare occurrence, no value.
+PIO.TrackEvent("tutorial_complete");
+```
+{/* /snippet:event */}
+
+Wire it into the game: add a GameObject named `PIO` to the first loaded scene and attach `PioBootstrap`. In the Editor this is a drag into the hierarchy; headless, edit the scene file, or ask your human to place it.
+
+The whole change, for a game with one decision point:
+
+| File | Change |
+| --- | --- |
+| `Packages/manifest.json` | Two dependency lines |
+| `Assets/Scripts/PioBootstrap.cs` | New file, the code above |
+| First loaded scene | One GameObject carrying `PioBootstrap` |
+
+## Step 4: run the game
+
+Enter Play mode and pass through the decision point, so the SDK initialises, serves a decision, and sends events.
+
+Headless, drive the same path with a PlayMode test run under `-runTests -testPlatform PlayMode`. The test awaits `PIO.Init`, requests a decision, tracks an event, then waits one flush interval so the queue ships. Write it against your own bootstrap code, and delete it after verification if the project does not keep tests.
+
+## Step 5: verify
+
+With the MCP server, call `check_integration` after each run and read three things:
+
+- `status` and `streaming`: `never` means nothing has arrived yet; `integrated` with `streaming: true` means events are flowing now.
+- `coverage`: track the event types the project expects, listed in `coverage.expected`. Types under `unregistered` are arriving without being registered; they still flow through, with a console warning. Hand-off: your human registers them in the dashboard to keep the vocabulary deliberate.
+- `next_step`: the one thing to do now. Do it, run again, and check again.
+
+Without the MCP server, hand-off: your human opens [integration health](/dashboard/integration-health) and reads the same facts, or runs `PIO/Verify Integration` in the Editor.
+
+You are done when `check_integration` reports `status: "integrated"` with your event types seen, or your human confirms the dashboard shows events arriving. Integration is one early stage of six; `get_project_status` names what remains after it, none of which needs code.
+
+## When something fails
+
+- Init fails: `PIO.State` names the phase, and the `OnError` line carries the code. Re-read the three credential values before touching code; most failures are a wrong or swapped id.
+- Attestation pending: events are refused until the child-directed question is answered. `check_integration` names it as the next step.
+- Decisions arrive but events never do: decisions and events travel to different services. Leave every `*UrlOverride` field blank; see [Verify your integration](/getting-started/verify-your-integration).
+- Any MCP tool error returns `error`, `message`, and `next_step`. Act on `next_step` rather than retrying the same call.
