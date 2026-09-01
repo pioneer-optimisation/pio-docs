@@ -1,0 +1,70 @@
+# Docs drift gate (ENG-1101): the local ratchets, run on a schedule.
+#
+# The quickstart code cannot lie locally (snippets extract from the compiling
+# sample in pio-unity-sdk; the API reference regenerates from public-api.md),
+# but nothing re-ran those checks when the SDK moved. This does, daily.
+#
+# Deliberately no auto-PR: a red run means either the SDK or the docs is
+# wrong, and deciding which is the point of the check. GitHub-hosted, node
+# only: no Unity, no self-hosted runner dependency.
+name: docs-drift
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: Drift against pio-unity-sdk main
+    runs-on: ubuntu-latest
+    steps:
+      # pio-unity-sdk is private; pio-docs is public, so the default token
+      # cannot read it. Mint a short-lived app token scoped to that one repo
+      # (same org app the SDK's release workflow uses).
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: sdk-token
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: pioneer-optimisation
+          repositories: pio-unity-sdk
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          path: pio-docs
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: pioneer-optimisation/pio-unity-sdk
+          token: ${{ steps.sdk-token.outputs.token }}
+          path: pio-unity-sdk
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "22"
+
+      - name: Snippets match the SDK sample
+        working-directory: pio-unity-sdk
+        run: node scripts/extract-snippets.mjs --docs ../pio-docs --check
+
+      - name: API reference matches public-api.md
+        working-directory: pio-unity-sdk
+        run: node scripts/sync-api-reference.mjs --docs ../pio-docs --check
+
+      - name: Brand lint (baseline stays empty)
+        working-directory: pio-docs
+        run: |
+          if [ -s config/brand_lint_baseline.txt ]; then
+            echo "brand-lint baseline must stay empty (AGENTS.md); found entries:"
+            cat config/brand_lint_baseline.txt
+            exit 1
+          fi
+          node bin/brand-lint
+
+      - name: No broken links
+        working-directory: pio-docs
+        run: npx --yes mint@4.2.835 broken-links
