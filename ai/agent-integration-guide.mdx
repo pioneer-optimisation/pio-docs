@@ -59,6 +59,7 @@ Create `Assets/Scripts/PioBootstrap.cs` containing exactly this file. It initial
 
 {/* snippet:bootstrap */}
 ```csharp Samples~/BasicIntegration/Assets/Scripts/PioBootstrap.cs
+using System;
 using System.Collections.Generic;
 using PIO;
 using UnityEngine;
@@ -81,6 +82,13 @@ public class PioBootstrap : MonoBehaviour
 
     async void Start()
     {
+        // Headless setups export credentials instead of typing them into the
+        // Inspector; a filled Inspector field always wins, and nothing writes
+        // a key into a committed scene or asset.
+        apiKey = string.IsNullOrEmpty(apiKey) ? Environment.GetEnvironmentVariable("PIO_API_KEY") ?? "" : apiKey;
+        accountId = string.IsNullOrEmpty(accountId) ? Environment.GetEnvironmentVariable("PIO_ACCOUNT_ID") ?? "" : accountId;
+        projectId = string.IsNullOrEmpty(projectId) ? Environment.GetEnvironmentVariable("PIO_PROJECT_ID") ?? "" : projectId;
+
         // Surface every SDK error as a console line while integrating.
         OnError += e =>
             Debug.LogWarning($"[PIO] {e.Severity} {e.Code}: {e.Message}");
@@ -131,10 +139,10 @@ Hand-off: each key you register must also exist as an action definition in the p
 
 Wire it into the game: add a GameObject named `PIO` to the first loaded scene and attach `PioBootstrap`, filling the three credential fields in the Inspector.
 
-Headless, or in a fresh project with no scene, create the scene with a throwaway Editor script instead of hand-writing scene YAML. It reads the credentials from environment variables, so no key lands in a committed file:
+Headless, or in a fresh project with no scene, create the scene with a throwaway Editor script instead of hand-writing scene YAML. The script only builds the scene; credentials never touch it. `PioBootstrap` itself reads `PIO_API_KEY`, `PIO_ACCOUNT_ID`, and `PIO_PROJECT_ID` from the environment when its Inspector fields are blank, so no key lands in a committed file:
 
 ```csharp Assets/Editor/PioSetup.cs
-using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -146,24 +154,25 @@ public static class PioSetup
         System.IO.Directory.CreateDirectory("Assets/Scenes");
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         var go = new GameObject("PIO");
-        var bootstrap = go.AddComponent<PioBootstrap>();
-        var so = new SerializedObject(bootstrap);
-        so.FindProperty("apiKey").stringValue = Environment.GetEnvironmentVariable("PIO_API_KEY");
-        so.FindProperty("accountId").stringValue = Environment.GetEnvironmentVariable("PIO_ACCOUNT_ID");
-        so.FindProperty("projectId").stringValue = Environment.GetEnvironmentVariable("PIO_PROJECT_ID");
-        so.ApplyModifiedPropertiesWithoutUndo();
+        go.AddComponent<PioBootstrap>();
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Main.unity");
-        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true) };
+        var scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+        if (!scenes.Exists(sc => sc.path == "Assets/Scenes/Main.unity"))
+        {
+            scenes.Insert(0, new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true));
+        }
+        EditorBuildSettings.scenes = scenes.ToArray();
     }
 }
 ```
 
-Run it once with the credentials in the environment, then delete the file:
+The scene list is appended, never replaced, so an existing project keeps its build entries. Run the script once, then delete the file:
 
 ```bash
-PIO_API_KEY=... PIO_ACCOUNT_ID=... PIO_PROJECT_ID=... \
 "$UNITY_EDITOR" -batchmode -nographics -quit -projectPath . -executeMethod PioSetup.Run -logFile -
 ```
+
+Export the same three variables for every headless run of the game or its tests; the Inspector path needs none of them.
 
 This guide configures the SDK in code. The SDK also offers a `PioSettings` asset (menu `PIO/Setup Wizard`), which the zero-argument `PIO.Init()` loads. The `PIO/Verify Integration` window expects that asset and reports a missing-settings failure even when a code-configured integration works; create the asset, or read past that one check.
 
