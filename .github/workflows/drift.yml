@@ -65,6 +65,10 @@ jobs:
           fi
           node bin/brand-lint
 
+      - name: Page inventory is current (bin/pages)
+        working-directory: pio-docs
+        run: node bin/pages --check
+
       - name: No broken links
         working-directory: pio-docs
         run: npx --yes mint@4.2.835 broken-links
