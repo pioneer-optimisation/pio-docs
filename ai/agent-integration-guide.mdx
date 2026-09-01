@@ -129,7 +129,41 @@ The `using static PIO.PIO;` line matters. The `PIO` class shares its name with t
 
 Hand-off: each key you register must also exist as an action definition in the project, with its candidate actions. There is no MCP tool for this yet; your human creates them in the dashboard.
 
-Wire it into the game: add a GameObject named `PIO` to the first loaded scene and attach `PioBootstrap`. In the Editor this is a drag into the hierarchy; headless, edit the scene file, or ask your human to place it. A fresh project may have no scene at all. Create `Assets/Scenes/Main.unity`, give it the `PIO` GameObject, and register it as the first scene in `ProjectSettings/EditorBuildSettings.asset`; Unity scene files are plain YAML, so writing a minimal one by hand is legitimate.
+Wire it into the game: add a GameObject named `PIO` to the first loaded scene and attach `PioBootstrap`, filling the three credential fields in the Inspector.
+
+Headless, or in a fresh project with no scene, create the scene with a throwaway Editor script instead of hand-writing scene YAML. It reads the credentials from environment variables, so no key lands in a committed file:
+
+```csharp Assets/Editor/PioSetup.cs
+using System;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+
+public static class PioSetup
+{
+    public static void Run()
+    {
+        System.IO.Directory.CreateDirectory("Assets/Scenes");
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        var go = new GameObject("PIO");
+        var bootstrap = go.AddComponent<PioBootstrap>();
+        var so = new SerializedObject(bootstrap);
+        so.FindProperty("apiKey").stringValue = Environment.GetEnvironmentVariable("PIO_API_KEY");
+        so.FindProperty("accountId").stringValue = Environment.GetEnvironmentVariable("PIO_ACCOUNT_ID");
+        so.FindProperty("projectId").stringValue = Environment.GetEnvironmentVariable("PIO_PROJECT_ID");
+        so.ApplyModifiedPropertiesWithoutUndo();
+        EditorSceneManager.SaveScene(scene, "Assets/Scenes/Main.unity");
+        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true) };
+    }
+}
+```
+
+Run it once with the credentials in the environment, then delete the file:
+
+```bash
+PIO_API_KEY=... PIO_ACCOUNT_ID=... PIO_PROJECT_ID=... \
+"$UNITY_EDITOR" -batchmode -nographics -quit -projectPath . -executeMethod PioSetup.Run -logFile -
+```
 
 This guide configures the SDK in code. The SDK also offers a `PioSettings` asset (menu `PIO/Setup Wizard`), which the zero-argument `PIO.Init()` loads. The `PIO/Verify Integration` window expects that asset and reports a missing-settings failure even when a code-configured integration works; create the asset, or read past that one check.
 
@@ -140,6 +174,7 @@ The whole change, for a game with one decision point:
 | `Packages/manifest.json` | Two dependency lines |
 | `Assets/Scripts/PioBootstrap.cs` | New file, the code above |
 | First loaded scene | One GameObject carrying `PioBootstrap`; the scene itself, when none exists |
+| `Assets/Editor/PioSetup.cs` | Temporary setup script; deleted after it runs |
 
 ## Step 4: run the game
 
@@ -148,7 +183,26 @@ Enter Play mode and pass through the decision point, so the SDK initialises, ser
 Headless, drive the same path with a PlayMode test run under `-runTests -testPlatform PlayMode`. Two pieces of setup come first:
 
 1. Add `com.unity.test-framework` to `Packages/manifest.json`; step 1's manifest does not include it.
-2. Test assemblies cannot reference the default `Assembly-CSharp`, so give `Assets/Scripts` its own assembly definition, then reference it from a test assembly under `Assets/Tests/PlayMode`.
+2. Test assemblies cannot reference the default `Assembly-CSharp`, so give `Assets/Scripts` its own assembly definition, then reference it from a test assembly under `Assets/Tests/PlayMode`. Delete `Assets/Editor/PioSetup.cs` before the split; it cannot see `PioBootstrap` afterwards.
+
+The two assembly definitions, exactly:
+
+```json Assets/Scripts/Game.Scripts.asmdef
+{
+    "name": "Game.Scripts",
+    "references": ["PIO.Runtime"]
+}
+```
+
+```json Assets/Tests/PlayMode/Game.Tests.PlayMode.asmdef
+{
+    "name": "Game.Tests.PlayMode",
+    "references": ["Game.Scripts", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+    "overrideReferences": true,
+    "precompiledReferences": ["nunit.framework.dll"],
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"]
+}
+```
 
 The test awaits `Init`, requests the decision, tracks an event, then waits one flush interval (30 seconds by default) so the queue ships. Write it against your own bootstrap code, and delete the test assembly after verification if the project does not keep tests.
 
@@ -160,6 +214,8 @@ With the MCP server, call `check_integration` after each run and read three thin
 - `coverage`: track the event types the project expects, listed in `coverage.expected`. Types under `unregistered` are arriving without being registered; they still flow through, with a console warning. Hand-off: your human registers them in the dashboard to keep the vocabulary deliberate.
 - `next_step`: the one thing to do now. Do it, run again, and check again.
 
+Two timing facts matter here. A successful flush writes nothing to the console at any verbosity, and `check_integration` can lag minutes behind real delivery. After a clean run, poll it patiently rather than reading a single `never` as failure.
+
 Without the MCP server, hand-off: your human opens [integration health](/dashboard/integration-health) and reads the same facts, or runs `PIO/Verify Integration` in the Editor.
 
 You are done when `check_integration` reports `status: "integrated"` with your event types seen, or your human confirms the dashboard shows events arriving. Integration is one early stage of six; `get_project_status` names what remains after it, none of which needs code.
@@ -167,6 +223,7 @@ You are done when `check_integration` reports `status: "integrated"` with your e
 ## When something fails
 
 - Init fails: `PIO.State` names the phase, and the `OnError` line carries the code. Re-read the three credential values before touching code; most failures are a wrong or swapped id.
+- Events sent, console clean, `status` still `never`: normal for the first minutes after a fresh integration. Keep polling `check_integration`; client-side silence is what success looks like.
 - Attestation pending: init itself fails, and the console shows a JSON parse error from the auth call, nothing about attestation. `check_integration` names the real cause as its next step. Check attestation before debugging URLs or JSON.
-- Decisions arrive but events never do: decisions and events travel to different services. Leave every `*UrlOverride` field blank; see [Verify your integration](/getting-started/verify-your-integration).
+- Decisions arrive but events never do: decisions and events travel to different services. Leave every `*UrlOverride` field blank; see [Verify your integration](/getting-started/verify-your-integration). When overrides are set deliberately, for a PIO internal environment, check their values instead of blanking them.
 - Any MCP tool error returns `error`, `message`, and `next_step`. Act on `next_step` rather than retrying the same call.
