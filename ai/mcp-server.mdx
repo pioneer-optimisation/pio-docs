@@ -3,7 +3,7 @@ title: "Connect the PIO MCP server"
 description: "Give your coding agent live access to project status, integration health, and project setup."
 ---
 
-The PIO MCP server lets a coding agent check its own work. After the agent writes the integration and runs the game, it calls `check_integration`. The response carries the same facts the dashboard shows: whether events arrived, which event types are missing, and the next step. Six tools cover the loop from creating a project to confirming that decisions flow in and events flow out.
+The PIO MCP server lets a coding agent check its own work. After the agent writes the integration and runs the game, it calls `check_integration`. The response carries the same facts the dashboard shows: whether events arrived, which event types are missing, and the next step. Eight tools cover the loop from creating a project, through registering its action definitions and event types, to confirming that decisions flow in and events flow out.
 
 The server speaks MCP over Streamable HTTP at one endpoint:
 
@@ -27,7 +27,7 @@ Scopes are the same for both:
 | Scope | Grants |
 | --- | --- |
 | `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle` |
-| `mcp:write` | `create_project` and `get_api_key`, in addition to the read tools |
+| `mcp:write` | `create_project`, `get_api_key`, `create_action_definition`, and `register_event_type`, in addition to the read tools |
 
 A credential without `mcp:write` never sees the write tools in `tools/list`. Every credential is bound to one account, chosen when it is issued.
 
@@ -106,6 +106,8 @@ Tool arguments use numeric ids. `whoami` lists the project ids; `create_project`
 | `get_model_lifecycle` | `mcp:read` | `project_id`, optional `model_id` | Readiness and lifecycle phase per model, with the project's latest evaluation summary |
 | `create_project` | `mcp:write` | `name`, optional `store_platform`, `launch_stage`, `expected_mau_band` | The new project's id, pending a human attestation (see below) |
 | `get_api_key` | `mcp:write` | `project_id` | The project's API key and account id for `PioSettings`. Account admins only; every reveal is audited |
+| `create_action_definition` | `mcp:write` | `project_id`, `name`, `actions`, `default_action` | The new categorical definition. The name must match the key registered in `PioConfig.Actions` |
+| `register_event_type` | `mcp:write` | `project_id`, `key`, optional `name` and `description` | The registered event type. Reserved platform keys are refused |
 
 Every tool response is a JSON document. When a tool cannot do what was asked it returns `error`, `message`, and `next_step`, so the agent can act on the failure rather than guess:
 
@@ -158,9 +160,10 @@ This is the tool the agent runs after each change. The `rungs` array is the same
 
 1. `whoami` to confirm the account and find or choose a project. With `mcp:write`, `create_project` makes a new one.
 2. `get_api_key` for the `ApiKey`, `AccountId`, and `ProjectId` that go into `PioSettings`. Keep the key out of source control.
-3. Integrate the SDK following the [quickstart](/getting-started/quickstart) and run the game.
-4. `check_integration`. If `status` is still `never`, the `next_step` says why. Fix, run, repeat.
-5. `get_project_status` to see which onboarding steps remain, then `get_model_lifecycle` once inputs and a model exist.
+3. `create_action_definition` for each key the game registers, and `register_event_type` for each event type it tracks.
+4. Integrate the SDK following the [quickstart](/getting-started/quickstart) and run the game.
+5. `check_integration`. If `status` is still `never`, the `next_step` says why. Fix, run, repeat.
+6. `get_project_status` to see which onboarding steps remain, then `get_model_lifecycle` once inputs and a model exist.
 
 ## Projects created by an agent
 
@@ -174,7 +177,7 @@ The person who confirms is recorded with the attestation, exactly as for a proje
 ## Limits and audit
 
 - `get_api_key` is limited to account admins. A non-admin credential gets a `forbidden` error naming who can help.
-- Each key reveal and each project creation is written to the account's audit log with the credential, the user, and the request's IP address.
+- Each key reveal, project creation, and definition registration is written to the account's audit log with the credential, the user, and the request's IP address.
 - Unauthenticated requests to `/mcp` are limited to 20 per minute per IP; client registration to 5 per minute; token requests to 30 per minute.
 - Tool calls are recorded (tool name, duration, outcome, never arguments) so the tool set can improve with use.
 - Nothing in this tool set deletes or rotates anything. Rotating an API key, when it ships, will be a separate, explicit tool.
