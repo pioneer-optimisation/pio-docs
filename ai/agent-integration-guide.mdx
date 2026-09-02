@@ -29,7 +29,7 @@ Add the SDK and its one dependency to `Packages/manifest.json`:
 }
 ```
 
-The SDK is pre-1.0, so pin an exact tag, never a branch. [Installation & versioning](/integration/installation-and-versioning) carries the current tag and the upgrade rules.
+Merge these two lines into the existing `dependencies` block; every manifest edit in this guide is additive, and replacing the file would drop the project's built-in modules. The SDK is pre-1.0, so pin an exact tag, never a branch. [Installation & versioning](/integration/installation-and-versioning) carries the current tag and the upgrade rules.
 
 Check: the project compiles and `using PIO;` resolves. Without the Editor open, compile in batch mode, with `UNITY_EDITOR` set to the editor binary for the project's Unity version:
 
