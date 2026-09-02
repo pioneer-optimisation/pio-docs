@@ -48,7 +48,7 @@ Three values connect the SDK to a project: `ApiKey`, `AccountId`, and `ProjectId
 With the MCP server:
 
 1. Call `whoami`. It names the account, your scopes, and the account's projects.
-2. Use the project your human names, or create one with `create_project`. A project you create is pending attestation. Hand-off: a member of the studio answers the child-directed question in the project's settings; events are refused until they do.
+2. Use the project your human names, or create one with `create_project`. A project you create starts under a not-child-directed default and accepts events at once. A studio member must confirm the child-directed answer in the project's settings within 14 days (the `confirm_by` date in tool responses), or the key is unpublished.
 3. Call `get_api_key` for the project. The response carries the API key and the account id. It needs an admin credential; a `forbidden` error names who can help. While attestation is pending the response says so, and the key cannot authenticate yet.
 
 Without the MCP server, hand-off: ask your human for all three values from the project's settings page in the dashboard.
@@ -293,6 +293,6 @@ You are done when `check_integration` reports `status: "integrated"` with your e
 
 - Init fails: `PIO.State` names the phase, and the `OnError` line carries the code. Re-read the three credential values before touching code; most failures are a wrong or swapped id.
 - Events sent, console clean, `status` still `never`: normal for the first minutes after a fresh integration. Keep polling `check_integration`; client-side silence is what success looks like.
-- Attestation pending: init itself fails, and the console shows a JSON parse error from the auth call, nothing about attestation. `check_integration` names the real cause as its next step. Check attestation before debugging URLs or JSON.
+- Attestation overdue: a project unconfirmed past its `confirm_by` date has its key unpublished, and init fails with a JSON parse error at the auth call rather than anything naming attestation. `check_integration` reports `attestation_overdue`; confirm in project settings to restore events.
 - Decisions arrive but events never do: decisions and events travel to different services. Leave every `*UrlOverride` field blank; see [Verify your integration](/getting-started/verify-your-integration). When overrides are set deliberately, for a PIO internal environment, check their values instead of blanking them.
 - Any MCP tool error returns `error`, `message`, and `next_step`. Act on `next_step` rather than retrying the same call.
