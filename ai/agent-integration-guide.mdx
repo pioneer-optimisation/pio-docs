@@ -191,7 +191,7 @@ Enter Play mode and pass through the decision point, so the SDK initialises, ser
 
 Headless, drive the same path with a PlayMode test run under `-runTests -testPlatform PlayMode`. Two pieces of setup come first:
 
-1. Add `com.unity.test-framework` to `Packages/manifest.json`; step 1's manifest does not include it.
+1. Add `com.unity.test-framework` (`1.1.33`) to `Packages/manifest.json`; step 1's manifest does not include it.
 2. Test assemblies cannot reference the default `Assembly-CSharp`, so give `Assets/Scripts` its own assembly definition, then reference it from a test assembly under `Assets/Tests/PlayMode`. Delete `Assets/Editor/PioSetup.cs` before the split; it cannot see `PioBootstrap` afterwards.
 
 The two assembly definitions, exactly:
@@ -213,7 +213,43 @@ The two assembly definitions, exactly:
 }
 ```
 
-The test awaits `Init`, requests the decision, tracks an event, then waits one flush interval (30 seconds by default) so the queue ships. Write it against your own bootstrap code, and delete the test assembly after verification if the project does not keep tests.
+The test, exactly:
+
+{/* snippet:playmode-test */}
+```csharp Samples~/BasicIntegration/Assets/Tests/PlayMode/PioIntegrationPlayModeTests.cs
+using System.Collections;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.TestTools;
+
+/// <summary>
+/// Drives the guide's bootstrap end to end: loads the scene the setup script
+/// built, lets PioBootstrap run Init, a decision, and both events, then waits
+/// one flush interval so the queue ships before the test ends. Export the
+/// three PIO_* variables before running it headless. Delete the test assembly
+/// after verification if the project does not keep tests.
+/// </summary>
+public class PioIntegrationPlayModeTests
+{
+    [UnityTest]
+    public IEnumerator BootstrapInitialisesAndShipsEvents()
+    {
+        yield return SceneManager.LoadSceneAsync("Main", LoadSceneMode.Single);
+
+        var pio = GameObject.Find("PIO");
+        Assert.IsNotNull(pio, "PIO GameObject missing from the Main scene");
+        Assert.IsNotNull(pio.GetComponent<PioBootstrap>(), "PioBootstrap not attached");
+
+        // One flush interval (30 seconds by default) plus a little slack, so
+        // the tracked events leave the queue before the test ends.
+        yield return new WaitForSeconds(31f);
+    }
+}
+```
+{/* /snippet:playmode-test */}
+
+It loads the scene from step 3 and lets `PioBootstrap.Start()` drive the whole loop: init, the decision, and both events, with one flush interval waited so the queue ships. Delete the test assembly after verification if the project does not keep tests.
 
 ## Step 5: verify
 
