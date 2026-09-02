@@ -137,7 +137,7 @@ public class PioBootstrap : MonoBehaviour
 
 The `using static PIO.PIO;` line matters. The `PIO` class shares its name with the `PIO` namespace, so qualified calls like `PIO.Init` do not resolve from a script outside that namespace.
 
-Hand-off: each key you register must also exist as an action definition in the project, with its candidate actions. There is no MCP tool for this yet; your human creates them in the dashboard.
+Each key you register must also exist as an action definition in the project. With the MCP server, call `create_action_definition` with the name, the candidate actions, and the default. Register the event types the game will track the same way, with `register_event_type`. Without the MCP server, hand-off: your human creates both in the dashboard.
 
 Wire it into the game: add a GameObject named `PIO` to the first loaded scene and attach `PioBootstrap`, filling the three credential fields in the Inspector.
 
@@ -280,7 +280,7 @@ Read the pass or fail from `playmode-results.xml`.
 With the MCP server, call `check_integration` after each run and read three things:
 
 - `status` and `streaming`: `never` means nothing has arrived yet; `integrated` with `streaming: true` means events are flowing now.
-- `coverage`: track the event types the project expects, listed in `coverage.expected`. Types under `unregistered` are arriving without being registered; they still flow through, with a console warning. Hand-off: your human registers them in the dashboard to keep the vocabulary deliberate.
+- `coverage`: track the event types the project expects, listed in `coverage.expected`. Types under `unregistered` are arriving without being registered; they still flow through, with a console warning. Register them with `register_event_type`; without the MCP server, your human does it in the dashboard.
 - `next_step`: the one thing to do now. Do it, run again, and check again.
 
 Two timing facts matter here. A successful flush writes nothing to the console at any verbosity, and `check_integration` can lag minutes behind real delivery. After a clean run, poll it patiently rather than reading a single `never` as failure.
