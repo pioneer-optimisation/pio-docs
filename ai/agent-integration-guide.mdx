@@ -39,6 +39,8 @@ Check: the project compiles and `using PIO;` resolves. Without the Editor open, 
 
 Exit code 0 and no `error CS` lines in the log mean the install compiles.
 
+On macOS the editor binary lives at `/Applications/Unity/Hub/Editor/<version>/Unity.app/Contents/MacOS/Unity`; export it as `UNITY_EDITOR` once and every later step reuses it.
+
 ## Step 2: choose a project and collect credentials
 
 Three values connect the SDK to a project: `ApiKey`, `AccountId`, and `ProjectId`.
@@ -263,6 +265,15 @@ public class PioIntegrationPlayModeTests
 {/* /snippet:playmode-test */}
 
 It loads the scene from step 3 and lets `PioBootstrap.Start()` drive the whole loop: init, the decision, and both events, with one flush interval waited so the queue ships. Delete the test assembly after verification if the project does not keep tests.
+
+Run it with a results file; for test runs the exit code alone is not a reliable pass signal:
+
+```bash
+"$UNITY_EDITOR" -batchmode -nographics -projectPath . \
+    -runTests -testPlatform PlayMode -testResults "$PWD/playmode-results.xml" -logFile -
+```
+
+Read the pass or fail from `playmode-results.xml`.
 
 ## Step 5: verify
 
