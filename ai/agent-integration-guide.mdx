@@ -39,7 +39,7 @@ Check: the project compiles and `using PIO;` resolves. Without the Editor open, 
 
 Exit code 0 and no `error CS` lines in the log mean the install compiles.
 
-The log never confirms that the git packages resolved. Check that both appear in `Packages/packages-lock.json` before trusting a quiet log; an empty resolve also exits 0.
+The log never confirms that the git packages resolved. Check that `Packages/packages-lock.json` locks both packages at the exact revisions the manifest pins; a failed or partial resolve can leave an older cached revision compiling, and still exits 0.
 
 On macOS the editor binary lives at `/Applications/Unity/Hub/Editor/<version>/Unity.app/Contents/MacOS/Unity`; export it as `UNITY_EDITOR` once and every later step reuses it.
 
@@ -297,5 +297,5 @@ You are done when `check_integration` reports `status: "integrated"` with your e
 - Events sent, console clean, `status` still `never`: normal for the first minutes after a fresh integration. Keep polling `check_integration`; client-side silence is what success looks like.
 - Attestation overdue: a project unconfirmed past its `confirm_by` date has its key unpublished. Init then fails with a JSON parse error at the auth call, nothing naming attestation. `check_integration` reports `attestation_overdue`; confirm in project settings to restore events.
 - Decisions arrive but events never do: decisions and events travel to different services. Leave every `*UrlOverride` field blank; see [Verify your integration](/getting-started/verify-your-integration). When overrides are set deliberately, for a PIO internal environment, check their values instead of blanking them.
-- `INGESTION_FAILED_PERMANENTLY`, events dropped after retries: the SDK queues events on disk under Unity's Company Name and Product Name, not under a PIO project. A machine that ran a different project under the same names retries that stale backlog, then drops it. If `check_integration` shows this run's events as seen, the drops were stale and nothing is wrong. To clear the backlog, delete `pio_events.db` under `Application.persistentDataPath`, or change the Product Name.
+- `INGESTION_FAILED_PERMANENTLY`, events dropped after retries: the SDK queues events on disk under Unity's Company Name and Product Name, not under a PIO project. A machine that ran a different project under the same names retries that stale backlog, then drops it. If `check_integration` shows this run's events as seen, the drops were stale and nothing is wrong. To clear the backlog, quit the application, then delete `pio_events.db` under `Application.persistentDataPath`. Leave the Product Name alone; changing it moves the whole persistent-data directory, saves included.
 - Any MCP tool error returns `error`, `message`, and `next_step`. Act on `next_step` rather than retrying the same call.
