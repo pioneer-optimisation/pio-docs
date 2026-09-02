@@ -167,10 +167,11 @@ This is the tool the agent runs after each change. The `rungs` array is the same
 
 ## Projects created by an agent
 
-A project made through `create_project` is created pending attestation. Before PIO accepts events, a member of your studio must answer the child-directed question in the project's settings; agents never answer it. Until then:
+A project made through `create_project` starts under a not-child-directed default: its API key is published at once and events are accepted. A member of your studio must still confirm the child-directed answer in the project's settings within 14 days; agents never answer it. While the confirmation is outstanding:
 
-- `get_api_key` returns the key with `attestation_pending: true`, and the key is not published to the edge, so the SDK cannot authenticate with it. Once the attestation is answered the field reads `null` and the key is live.
-- `check_integration` and `get_project_status` report the attestation as the next step, with the settings path to complete it.
+- `create_project` and `get_api_key` return `attestation_pending: true` with a `confirm_by` date; once a studio member answers, the field reads `null`.
+- `check_integration` and `get_project_status` keep the confirmation as the next step, with the settings path.
+- Past `confirm_by` the key is unpublished and events stop until someone answers. The dashboard shows the same warning on every page of the project.
 
 The person who confirms is recorded with the attestation, exactly as for a project created in the dashboard. See [Consent and privacy](/integration/consent-and-privacy) for what the answer changes.
 
