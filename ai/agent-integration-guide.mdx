@@ -222,6 +222,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using static PIO.PIO;
 
 /// <summary>
 /// Drives the guide's bootstrap end to end: loads the scene the setup script
@@ -241,8 +242,20 @@ public class PioIntegrationPlayModeTests
         Assert.IsNotNull(pio, "PIO GameObject missing from the Main scene");
         Assert.IsNotNull(pio.GetComponent<PioBootstrap>(), "PioBootstrap not attached");
 
-        // One flush interval (30 seconds by default) plus a little slack, so
+        // Start() is async void, so the scene load returns before init runs.
+        // Wait for readiness first, or the flush timer below starts before
+        // any event has been tracked.
+        var deadline = Time.realtimeSinceStartup + 30f;
+        while (!IsReady && Time.realtimeSinceStartup < deadline)
+        {
+            yield return null;
+        }
+        Assert.IsTrue(IsReady, $"PIO not ready within 30 seconds (state: {State})");
+
+        // A few seconds for the decision and both events to be tracked, then
+        // one flush interval (30 seconds by default) plus a little slack, so
         // the tracked events leave the queue before the test ends.
+        yield return new WaitForSeconds(5f);
         yield return new WaitForSeconds(31f);
     }
 }
