@@ -196,26 +196,46 @@ Enter Play mode and pass through the decision point, so the SDK initialises, ser
 Headless, drive the same path with a PlayMode test run under `-runTests -testPlatform PlayMode`. Two pieces of setup come first:
 
 1. Add `com.unity.test-framework` (`1.1.33`) to `Packages/manifest.json`; step 1's manifest does not include it.
-2. Test assemblies cannot reference the default `Assembly-CSharp`, so give `Assets/Scripts` its own assembly definition, then reference it from a test assembly under `Assets/Tests/PlayMode`. Delete `Assets/Editor/PioSetup.cs` before the split; it cannot see `PioBootstrap` afterwards.
+2. Test assemblies cannot reference the default `Assembly-CSharp`, so give `Assets/Scripts` its own assembly definition. Put the test assembly definition under `Assets/Tests/PlayMode`. Delete the temporary `Assets/Editor/PioSetup.cs` after scene setup.
 
-The two assembly definitions, exactly:
+Use the sample's two assembly definitions, preserving their names and references. The code-block titles identify their source files in the SDK.
 
-```json Assets/Scripts/Game.Scripts.asmdef
+Copy this file to `Assets/Scripts/PIO.Samples.asmdef`:
+
+{/* snippet:sample-scripts-assembly */}
+```json Samples~/BasicIntegration/Assets/Scripts/PIO.Samples.asmdef
 {
-    "name": "Game.Scripts",
-    "references": ["PIO.Runtime"]
+  "name": "PIO.Samples",
+  "rootNamespace": "PIO.Samples",
+  "references": [
+    "PIO.Runtime"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }
 ```
+{/* /snippet:sample-scripts-assembly */}
 
-```json Assets/Tests/PlayMode/Game.Tests.PlayMode.asmdef
+Copy this file to `Assets/Tests/PlayMode/PIO.Samples.Tests.PlayMode.asmdef`:
+
+{/* snippet:sample-tests-assembly */}
+```json Samples~/BasicIntegration/Assets/Tests/PlayMode/PIO.Samples.Tests.PlayMode.asmdef
 {
-    "name": "Game.Tests.PlayMode",
-    "references": ["Game.Scripts", "PIO.Runtime", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
-    "overrideReferences": true,
-    "precompiledReferences": ["nunit.framework.dll"],
-    "defineConstraints": ["UNITY_INCLUDE_TESTS"]
+  "name": "PIO.Samples.Tests.PlayMode",
+  "references": ["PIO.Samples", "PIO.Runtime", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"],
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"]
 }
 ```
+{/* /snippet:sample-tests-assembly */}
 
 The test, exactly:
 
