@@ -53,6 +53,7 @@
               "dashboard/onboarding-checklist",
               "dashboard/integration-health",
               "dashboard/model-lifecycle",
+              "dashboard/go-live",
               "dashboard/forecast-accuracy"
             ]
           }
