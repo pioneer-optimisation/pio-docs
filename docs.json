@@ -52,7 +52,8 @@
             "pages": [
               "dashboard/onboarding-checklist",
               "dashboard/integration-health",
-              "dashboard/model-lifecycle"
+              "dashboard/model-lifecycle",
+              "dashboard/forecast-accuracy"
             ]
           }
         ]

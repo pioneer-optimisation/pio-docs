@@ -7,6 +7,7 @@
 /concepts/action-spaces-and-payloads
 /concepts/how-pio-optimises
 /concepts/reward-design
+/dashboard/forecast-accuracy
 /dashboard/integration-health
 /dashboard/model-lifecycle
 /dashboard/onboarding-checklist

@@ -1,0 +1,73 @@
+---
+title: "Forecast accuracy"
+description: "How PIO checks its own predictions against what your users did."
+---
+
+For every new user, each model predicts three things: how far they progress, how long they play, and whether they come back. The Forecast accuracy panel on the Performance page checks those predictions against what the users then did.
+
+Accurate forecasts show that a model has learned how your game behaves. They do not show that the model improves your game; the Uplift panel answers that.
+
+## How forecasts are checked
+
+Once a user's first period of play is over, their outcome is known. PIO compares it with the prediction made for them at the time.
+
+Only users the model was never trained on are checked. A model cannot pass by remembering users it has already seen, so the check reflects how it predicts new users.
+
+The panel reads one model at a time. Choose a model with the chips at the top of the panel; every row below belongs to that model.
+
+## What each model is optimising
+
+Under the model chips, the panel shows the model's reward as a formula, for example `1.0 × Progression + 0.1/min × Play time + 5.0 × Retention (day 1)`. Hover a term for its definition. A component the reward leaves out is shown dimmed and marked as not rewarded; PIO still forecasts it.
+
+The formula comes from the reward configuration attached to the model. See [Reward design](/concepts/reward-design) for how that configuration is built.
+
+## The components
+
+| Component | What is predicted | Accurate within |
+| --- | --- | --- |
+| Progression | The chance the user plays on far enough for PIO to make its next decision for them | 2 percentage points |
+| Play time | Minutes of active play in the user's first day | 10% of what users actually played |
+| Retention | The chance the user is still playing at the end of the reward window, for example day 1 | 2 percentage points |
+
+These margins are the defaults. They are set per project, so a game with a different tolerance for error can hold its forecasts to a different standard.
+
+## Reading a row
+
+Each row compares the average prediction with the average outcome for the users checked so far.
+
+- The tick marks the average prediction.
+- The shaded zone around the tick is the margin that counts as accurate.
+- The bar is the range the true average outcome lies in, drawn in the model's colour.
+
+Hover a row for its target range (the shaded zone as numbers), the range of what users did, the number of users checked, and when it was last checked. Select a row to see its history.
+
+## Why ranges start wide and narrow
+
+With few users checked, chance alone can move the average a long way, so the range starts wide. Each day adds users and the range narrows.
+
+The range holds however often you look. Checking the panel every morning does not make a verdict more likely to be wrong, so you can act on a verdict as soon as it appears.
+
+## The verdicts
+
+- Accurate: the whole range sits inside the shaded zone, the forecast is right across low and high predictions, and it tells users apart better than a flat guess would.
+- Off target: the whole range sits outside the shaded zone. The row opens on its history so you can see when the gap appeared.
+- Gathering: too few users have been checked to judge. The row shows how many have been checked, how many are needed, and when the first check is expected.
+- Not settled: enough users have been checked, but one of the three conditions for Accurate is not yet met. Hover the word for which one.
+
+A forecast can be right on average and still be off for some users. That is why Accurate also requires the forecast to hold for users PIO rated unlikely and users it rated likely.
+
+## History by install day
+
+Selecting a row opens its history: the average prediction (dashed) and the average outcome (solid) for each day's new users.
+
+- The shaded band around the solid line is a rough range for that one day. It is wider than the row's range because it rests on one day of users.
+- A day is plotted only once all of its users have been checked.
+- Markers show when a new version of the model went live and when its reward configuration changed.
+
+When your game changes, for example a new level design, users start behaving differently from what the model learned. The two lines separate from that day. Retraining on the new behaviour closes the gap.
+
+## How this differs from uplift
+
+Forecast accuracy asks whether the model understands your game. Uplift asks whether its decisions make your game better than the baseline.
+
+A model can forecast well and still make no difference, for example when every choice it has leads to much the same outcome. A model that forecasts badly is a reason to look closer before trusting its uplift.
