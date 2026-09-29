@@ -1,0 +1,64 @@
+---
+title: "Going live"
+description: "How PIO picks a model's first share of users, what happens next, and what stops it doing harm."
+---
+
+A new model reaches its first users from its go-live page. Open it with Go live on the model's row on the Models page. Every value on the page starts as a safe default you can change, and one button starts the experiment.
+
+The go-live page is the only way to give a model its first users. That includes a challenger, which starts at 0% of traffic. Once a model has served users, you change its share from the Models page.
+
+## How the share is chosen
+
+The share is the percentage of new users who get the model. Everyone else stays on the models already live, in the same proportions as before.
+
+PIO suggests the smallest share that should show a 5 point change in day 1 retention within about 3 weeks. The suggestion never goes below 5% or above 50%.
+
+- A larger share gives an answer sooner.
+- A smaller share means fewer users see something new while it is being tested.
+
+The suggestion rests on your game's own traffic: new users a day and how many return on day 1. Until PIO has 3 days of that traffic, it suggests 10%.
+
+At low traffic, even 50% can take more than 90 days to show a 5 point change. The page says so. In that case the risk is a test that never finishes, not the number of users who see the model.
+
+Move the slider or type a number between 5 and 50. The split bar and the timeline update as you do.
+
+## What happens next
+
+The timeline on the page counts days from the moment you start the experiment.
+
+- Today: the model goes live for its share of new users, and measurement starts.
+- Day 2: the first users reach day 1, so the first retention results arrive.
+- First answer: the day a 5 point change should be visible at the chosen share. It appears once PIO can project it for your traffic.
+- Day 90: the furthest PIO projects. A change still unresolved by then is too small to measure at your traffic.
+
+## What the safety checks do
+
+Each live model is compared with the baseline on checks that must not get worse, alongside the result it is trying to improve.
+
+| Check | Must not fall by more than |
+| --- | --- |
+| Still active after 7 days | 3 percentage points |
+| Users who saw no crash | 2 percentage points |
+
+A check reads Harm when a model is confidently worse than the baseline by more than its margin. Before a model has users, its checks read Armed: they will run as soon as users arrive.
+
+Each check is judged on its own, and there is no combined score. See [Model lifecycle](/dashboard/model-lifecycle) for where results appear after launch.
+
+## Automatic rollback
+
+The box "Switch it off for me if a check finds real harm" is the same setting as Automatic rollback on the Models page. It covers every model in the project.
+
+- Off: PIO tells you when a check finds harm. The traffic stays yours to change.
+- On: a model a check finds harmful has its share set to 0% without waiting for you.
+
+Rollback acts only on stronger evidence than the Harm verdict, so a check can read Harm while the model keeps running. Putting a model back is always a manual step, and measurement restarts from that point.
+
+Rollback is off by default while PIO gathers evidence on real traffic that its bar is set correctly.
+
+## Per option limits
+
+Each option in a decision can carry a cap: the largest share of that decision's users it may receive. Caps are set on the Actions page.
+
+The go-live page lists every cap on the model's decisions. It opens the list with a warning when a cap is below an even split of that decision's options. A cap below an even split limits the option from the first user onwards.
+
+You can set any model's share to 0% at any time from the Models page. The change reaches your game within seconds.

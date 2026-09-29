@@ -8,6 +8,7 @@
 /concepts/how-pio-optimises
 /concepts/reward-design
 /dashboard/forecast-accuracy
+/dashboard/go-live
 /dashboard/integration-health
 /dashboard/model-lifecycle
 /dashboard/onboarding-checklist
