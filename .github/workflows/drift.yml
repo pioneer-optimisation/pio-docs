@@ -20,7 +20,10 @@ permissions:
 jobs:
   drift:
     name: Drift against pio-unity-sdk main
+    # Stays GitHub-hosted: this repo is public, so hosted minutes are free,
+    # while a Depot runner would bill them.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # pio-unity-sdk is private; pio-docs is public, so the default token
       # cannot read it. Mint a short-lived app token scoped to that one repo
