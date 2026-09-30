@@ -26,10 +26,11 @@ Scopes are the same for both:
 
 | Scope | Grants |
 | --- | --- |
-| `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle` |
+| `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle`, `get_holdout_suggestion` |
 | `mcp:write` | `create_project`, `get_api_key`, `create_action_definition`, and `register_event_type`, in addition to the read tools |
+| `mcp:traffic` | `shrink_baseline`. It moves live traffic, so it is never granted by default: tick it explicitly when you issue the credential |
 
-A credential without `mcp:write` never sees the write tools in `tools/list`. Every credential is bound to one account, chosen when it is issued.
+A credential without `mcp:write` never sees the write tools in `tools/list`, and one without `mcp:traffic` never sees `shrink_baseline`. Every credential is bound to one account, chosen when it is issued.
 
 ### OAuth 2.1
 
@@ -108,6 +109,8 @@ Tool arguments use numeric ids. `whoami` lists the project ids; `create_project`
 | `get_api_key` | `mcp:write` | `project_id` | The project's API key and account id for `PioSettings`. Account admins only; every reveal is audited |
 | `create_action_definition` | `mcp:write` | `project_id`, `name`, `actions`, `default_action` | The new categorical definition. The name must match the key registered in `PioConfig.Actions` |
 | `register_event_type` | `mcp:write` | `project_id`, `key`, optional `name` and `description` | The registered event type. Reserved platform keys are refused |
+| `get_holdout_suggestion` | `mcp:read` | `project_id` | After a clear Benefit, the smallest share Baseline can shrink to at this traffic, with the values `shrink_baseline` needs; or why there is none |
+| `shrink_baseline` | `mcp:traffic` | `project_id`, `expected_epoch_id`, `share` | Shrinks Baseline to the suggested share, the same action as the Experiments tab. Starts a fresh measurement. Refuses if the measurement or the suggestion changed; every change is audited |
 
 Every tool response is a JSON document. When a tool cannot do what was asked it returns `error`, `message`, and `next_step`, so the agent can act on the failure rather than guess:
 
