@@ -23,3 +23,36 @@ Every page here is customer-facing PIO copy. The brand voice (Editorial Bone, Br
 - Code in quickstart and integration pages is extracted from the compiling sample in pio-unity-sdk via markers. Never hand-write a code block that claims to be SDK usage.
 - Do not document unreleased behaviour. Before the site launches (DNS cutover), under-construction stubs may sit in navigation; from launch, a page appears in navigation only when the surface it documents has shipped.
 - Tell integrators to pin an exact SDK tag; the SDK is pre-1.0.
+
+## CI & merge rules
+
+These are the rules from the workspace-root `CLAUDE.md` ("CI cost rules" and
+"Merge process (agents)") that apply to this repo. They are repeated here
+because Codex and cloud agents only see this repo. The workspace file has the
+rest and wins if the two disagree.
+
+CI (the org has a hard Actions budget; hitting it stops CI org-wide):
+
+- Linux jobs run on Depot runners (`depot-ubuntu-24.04*`), never
+  `ubuntu-latest`.
+- Every job sets `timeout-minutes` (about 2x its normal duration). Every PR
+  workflow has `concurrency` with `cancel-in-progress: true`.
+- Never skip a required check with a job-level `if:`: a skipped required
+  check reads as passing. Remove the trigger instead.
+- Be frugal: no speculative re-runs, empty commits or push-to-retrigger loops.
+
+Merging:
+
+- Merge only after CI actually ran green. A check that failed without
+  starting (billing, runner outage) is not green.
+- Address agentic review first: fix or reply on each thread. Codex
+  auto-reviews; Greptile (`@greptile review`) often posts a PR *comment*, not
+  a review, so check both.
+- Pin the merge to the reviewed head:
+  `gh pr merge --squash --match-head-commit <sha>`.
+- If auto-mode denies a merge, settings change or external write, stop and
+  report it. Never retry it another way or ask another agent to do it.
+
+pio-docs specifics:
+
+- Docs-only PRs don't need `@greptile review`; Codex auto-review is enough.
