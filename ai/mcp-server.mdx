@@ -3,7 +3,7 @@ title: "Connect the PIO MCP server"
 description: "Give your coding agent live access to project status, integration health, and project setup."
 ---
 
-The PIO MCP server lets a coding agent check its own work. After the agent writes the integration and runs the game, it calls `check_integration`. The response carries the same facts the dashboard shows: whether events arrived, which event types are missing, and the next step. The tools cover the loop from creating a project, through registering its action definitions and event types, to confirming that decisions flow in and events flow out. An agent can also fork and archive models. The opt-in traffic scope adds the tools that move live traffic: going live, setting the split and automatic rollback, deciding challengers, resizing Baseline, and moving users to a winner.
+The PIO MCP server lets a coding agent check its own work. After the agent writes the integration and runs the game, it calls `check_integration`. The response carries the same facts the dashboard shows: whether events arrived, which event types are missing, and the next step. The tools cover the loop from creating a project, through authoring its states, decisions, rewards and event types, to confirming that decisions flow in and events flow out. An agent can also create a model from a template, fork and archive models, and read parity and notifications. The opt-in traffic scope adds the tools that change what live players get: going live, setting the split and automatic rollback, deciding challengers, resizing Baseline, moving users to a winner, retiring an option, resetting a broken measurement, and editing what a live model uses.
 
 The server speaks MCP over Streamable HTTP at one endpoint:
 
@@ -26,9 +26,9 @@ Scopes are the same for both:
 
 | Scope | Grants |
 | --- | --- |
-| `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle`, `get_holdout_suggestion`, `get_winner_suggestion` |
-| `mcp:write` | `create_project`, `get_api_key`, `create_action_definition`, `register_event_type`, `fork_model`, and `archive_model`, in addition to the read tools |
-| `mcp:traffic` | `go_live`, `set_traffic_split`, `set_auto_rollback`, `promote_model`, `abandon_model`, `shrink_baseline`, and `shift_to_winner`. They move live traffic, so the scope is never granted by default: tick it explicitly when you issue the credential |
+| `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle`, `get_project_inputs`, `list_model_templates`, `get_parity_report`, `list_notifications`, `get_holdout_suggestion`, `get_winner_suggestion` |
+| `mcp:write` | `create_project`, `update_project`, `get_api_key`, `create_action_definition`, `update_action_definition`, `register_event_type`, `create_state_definition`, `update_state_definition`, `create_reward`, `update_reward`, `create_model_from_template`, `fork_model`, `archive_model`, and `mark_notification_read`, in addition to the read tools |
+| `mcp:traffic` | `go_live`, `set_traffic_split`, `set_auto_rollback`, `promote_model`, `abandon_model`, `shrink_baseline`, `shift_to_winner`, `retire_choice`, and `reset_measurement`. With `mcp:write`, it also lets `update_reward` and `update_action_definition` change what a live model uses. These change what live players get, so the scope is never granted by default: tick it explicitly when you issue the credential |
 
 A credential without `mcp:write` never sees the write tools in `tools/list`, and one without `mcp:traffic` never sees the traffic tools. Every credential is bound to one account, chosen when it is issued.
 
@@ -120,6 +120,20 @@ Tool arguments use numeric ids. `whoami` lists the project ids; `create_project`
 | `abandon_model` | `mcp:traffic` | `project_id`, `model_id`, optional `confirm`, `expected_epoch_id` | The challenger is archived at 0%; its share re-splits among the remaining models |
 | `fork_model` | `mcp:write` | `project_id`, `model_id` | A challenger: a copy of an active model that gets no users until `go_live` |
 | `archive_model` | `mcp:write` | `project_id`, `model_id` | Archives a model that gets no users. A model with users, Baseline, and a challenger under test are refused |
+| `update_project` | `mcp:write` | `project_id`, optional `name`, `store_platform`, `app_store_identifier`, `play_store_identifier`, `launch_stage`, `expected_mau_band`, `test_device_identifiers` | The project's settings. Only the fields you pass change. The child-directed answer and deleting a project stay in the dashboard |
+| `get_project_inputs` | `mcp:read` | `project_id` | The ids the authoring tools address: states, decisions with each option's stable id, rewards with the models using them, and event types |
+| `create_state_definition` | `mcp:write` | `project_id`, `key`, `name`, `data_type`, optional `min`, `max` | A state the game reports. Catalogue keys (`std_*`) become standard states; any other key is custom |
+| `update_state_definition` | `mcp:write` | `project_id`, `state_definition_id`, optional `key`, `name`, `data_type`, `min`, `max` | The changed state. Automatic states are read-only and standard states keep their key |
+| `create_reward` | `mcp:write` | `project_id`, `name`, optional `discount_gamma`, `horizon_hours`, `rules` | A new reward. Omitted fields take the preset the dashboard starts from |
+| `update_reward` | `mcp:write` | `project_id`, `reward_id`, optional `name`, `discount_gamma`, `horizon_hours`, `rules`, `confirm`, `expected_revision` | The changed reward. A change to what a live model optimises also needs `mcp:traffic` and a preview. See [Edit inputs a live model uses](#edit-inputs-a-live-model-uses) |
+| `update_action_definition` | `mcp:write` | `project_id`, `action_definition_id`, `operation`, and that operation's fields, optional `confirm`, `expected_revision` | Renames a decision or an option, sets an option's traffic floor and cap, or sets when it is unavailable. See [Edit inputs a live model uses](#edit-inputs-a-live-model-uses) |
+| `retire_choice` | `mcp:traffic` | `project_id`, `action_definition_id`, `choice_id`, optional `default_action`, `confirm`, `expected_revision` | Stops serving one option. The option is retired, not deleted: its id stays reserved and it can be reactivated on the decision's page |
+| `list_model_templates` | `mcp:read` | `project_id` | The templates this project can start from, best fit first, with the signals each still needs |
+| `create_model_from_template` | `mcp:write` | `project_id`, `template_key`, optional `version` | A draft model with the decision, states, goal event and reward it needs. Calling it again returns the same model |
+| `reset_measurement` | `mcp:traffic` | `project_id`, optional `expected_epoch_id` | After the traffic-split check trips, starts a fresh measurement from tomorrow's new users. Refused while the check is not tripped |
+| `get_parity_report` | `mcp:read` | `project_id` | Whether the on-device runtime and the Worker reproduce the cloud runtime's answers. A fidelity check, never a measure of model quality |
+| `list_notifications` | `mcp:read` | optional `unread_only`, `limit` | The credential's user's notifications in this account, newest first. Listing does not mark them seen |
+| `mark_notification_read` | `mcp:write` | `notification_id`, or `all: true` | Marks one notification, or all of them, read |
 
 Every tool response is a JSON document. When a tool cannot do what was asked it returns `error`, `message`, and `next_step`, so the agent can act on the failure rather than guess:
 
@@ -215,14 +229,40 @@ A model's first users always come through `go_live`: `set_traffic_split` refuses
 
 Every change, from an agent or from the Models page, is written to the audit log in the same transaction as the change.
 
+## Edit inputs a live model uses
+
+Most authoring applies in one call. Three edits change what live players get, so they follow the same two calls as `go_live`:
+
+- `update_reward`, when an active model trains on the reward and the edit changes its rules, horizon or discount.
+- `update_action_definition`, for any operation except `rename_choice`, when an active model uses the decision.
+- `retire_choice`, always.
+
+1. Call without `confirm`. Nothing changes. The response shows the current values, the proposed change, the live models it reaches, and `expected_revision`.
+2. Call again with the same arguments, `confirm: true`, and that `expected_revision`. If the input or the requested change differs from the preview, the call refuses with `stale` and changes nothing.
+
+Without `mcp:traffic`, these edits refuse with `traffic_scope_required`. A rename that only changes a reward's name, or an option's label, applies at once: options keep their stable ids, so the live model serves the same arms.
+
+A confirmed change to a live champion's reward does not rewrite what it serves. It creates a challenger at 0% that trains on the edited reward, for you to compare and promote. A reward used only by Baseline or a promoted challenger changes in place.
+
+`update_action_definition` takes one `operation` per call:
+
+| `operation` | Fields | Effect |
+| --- | --- | --- |
+| `rename` | `name` | Renames the decision. The name must match the key the game registers |
+| `rename_choice` | `choice_id`, `label` | Renames an option. Its id never changes and old labels stay reserved |
+| `update_steering` | `choice_id`, optional `min_serve_prob`, `max_serve_prob`, `logit_prior` | Sets an option's traffic floor and cap (fractions from 0 to 1) and its prior (from -5 to 5) |
+| `update_mask_rule` | `choice_id`, `mask_rule` | Sets when an option is unavailable, for example `{"op": "lt", "input": "std_level_index", "value": 3}`. `null` clears it |
+
+`reset_measurement` follows the same pattern: the first call reports the tripped measurement's `epoch_id`, and the second call passes it as `expected_epoch_id`.
+
 ## The integrate-and-verify loop
 
 1. `whoami` to confirm the account and find or choose a project. With `mcp:write`, `create_project` makes a new one.
 2. `get_api_key` for the `ApiKey`, `AccountId`, and `ProjectId` that go into `PioSettings`. Keep the key out of source control.
-3. `create_action_definition` for each key the game registers, and `register_event_type` for each event type it tracks.
+3. `create_action_definition` for each key the game registers, `create_state_definition` for each state it reports, and `register_event_type` for each event type it tracks. `get_project_inputs` lists what exists.
 4. Integrate the SDK following the [quickstart](/getting-started/quickstart) and run the game.
 5. `check_integration`. If `status` is still `never`, the `next_step` says why. Fix, run, repeat.
-6. `get_project_status` to see which onboarding steps remain, then `get_model_lifecycle` once inputs and a model exist.
+6. `get_project_status` to see which onboarding steps remain. `list_model_templates` and `create_model_from_template` make a draft model; `get_model_lifecycle` shows what it still needs before `go_live`.
 
 ## Projects created by an agent
 
@@ -237,7 +277,7 @@ The person who confirms is recorded with the attestation, exactly as for a proje
 ## Limits and audit
 
 - `get_api_key` is limited to account admins. A non-admin credential gets a `forbidden` error naming who can help.
-- Each key reveal, project creation, definition registration, go-live, model change, and traffic change is written to the account's audit log with the credential, the user, and the request's IP address.
+- Each key reveal, project or input change, go-live, model change, and traffic change is written to the account's audit log with the credential, the user, and the request's IP address.
 - Unauthenticated requests to `/mcp` are limited to 20 per minute per IP; client registration to 5 per minute; token requests to 30 per minute.
 - Tool calls are recorded (tool name, duration, outcome, never arguments) so the tool set can improve with use.
-- Nothing in this tool set deletes or rotates anything; `archive_model` archives, and the model can be restored from the Models page. Rotating an API key, when it ships, will be a separate, explicit tool.
+- Nothing in this tool set deletes or rotates anything. `archive_model` archives and `retire_choice` retires; both can be undone from the dashboard. Deleting a project stays in the dashboard. Rotating an API key, when it ships, will be a separate, explicit tool.
