@@ -5,7 +5,7 @@ description: "How PIO picks a model's first share of users, what happens next, a
 
 A new model reaches its first users from its go-live page. Open it with Go live on the model's row on the Models page. Every value on the page starts as a safe default you can change, and one button starts the experiment.
 
-The go-live page is the only way to give a model its first users. That includes a challenger, which starts at 0% of traffic. Once a model has served users, you change its share from the Models page.
+The go-live page is where a person gives a model its first users. That includes a challenger, which starts at 0% of traffic. An agent with the `mcp:traffic` scope can do the same through the [`go_live` tool](/ai/mcp-server#go_live), which shows it the same values and runs the same checks. Once a model has served users, you change its share from the Models page.
 
 ## How the share is chosen
 
