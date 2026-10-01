@@ -3,7 +3,7 @@ title: "Connect the PIO MCP server"
 description: "Give your coding agent live access to project status, integration health, and project setup."
 ---
 
-The PIO MCP server lets a coding agent check its own work. After the agent writes the integration and runs the game, it calls `check_integration`. The response carries the same facts the dashboard shows: whether events arrived, which event types are missing, and the next step. The tools cover the loop from creating a project, through authoring its states, decisions, rewards and event types, to confirming that decisions flow in and events flow out. An agent can also create a model from a template, fork and archive models, and read parity and notifications. The opt-in traffic scope adds the tools that change what live players get: going live, setting the split and automatic rollback, deciding challengers, resizing Baseline, moving users to a winner, retiring an option, resetting a broken measurement, and editing what a live model uses.
+The PIO MCP server lets a coding agent check its own work. After the agent writes the integration and runs the game, it calls `check_integration`. The response carries the same facts the dashboard shows: whether events arrived, which event types are missing, and the next step. The tools cover the loop from creating a project, through authoring its states, decisions, rewards and event types, to confirming that decisions flow in and events flow out. An agent can also create a model from a template, fork and archive models, and read notifications. The opt-in traffic scope adds the tools that change what live players get: going live, setting the split and automatic rollback, deciding challengers, resizing Baseline, moving users to a winner, retiring an option, resetting a broken measurement, and editing what a live model uses.
 
 The server speaks MCP over Streamable HTTP at one endpoint:
 
@@ -26,7 +26,7 @@ Scopes are the same for both:
 
 | Scope | Grants |
 | --- | --- |
-| `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle`, `get_project_inputs`, `list_model_templates`, `get_parity_report`, `list_notifications`, `get_holdout_suggestion`, `get_winner_suggestion`, `get_experiment_evidence`, `get_guardrails`, `get_forecasts` |
+| `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle`, `get_project_inputs`, `list_model_templates`, `list_notifications`, `get_holdout_suggestion`, `get_winner_suggestion`, `get_experiment_evidence`, `get_guardrails`, `get_forecasts` |
 | `mcp:write` | `create_project`, `update_project`, `get_api_key`, `create_action_definition`, `update_action_definition`, `register_event_type`, `create_state_definition`, `update_state_definition`, `create_reward`, `update_reward`, `create_model_from_template`, `fork_model`, `archive_model`, and `mark_notification_read`, in addition to the read tools |
 | `mcp:traffic` | `go_live`, `set_traffic_split`, `set_auto_rollback`, `promote_model`, `abandon_model`, `shrink_baseline`, `shift_to_winner`, `retire_choice`, and `reset_measurement`. With `mcp:write`, it also lets `update_reward` and `update_action_definition` change what a live model uses. These change what live players get, so the scope is never granted by default: tick it explicitly when you issue the credential |
 
@@ -134,7 +134,6 @@ Tool arguments use numeric ids. `whoami` lists the project ids; `create_project`
 | `list_model_templates` | `mcp:read` | `project_id` | The templates this project can start from, best fit first, with the signals each still needs |
 | `create_model_from_template` | `mcp:write` | `project_id`, `template_key`, optional `version` | A draft model with the decision, states, goal event and reward it needs. Calling it again returns the same model |
 | `reset_measurement` | `mcp:traffic` | `project_id`, optional `expected_epoch_id` | After the traffic-split check trips, starts a fresh measurement from tomorrow's new users. Refused while the check is not tripped |
-| `get_parity_report` | `mcp:read` | `project_id` | Whether the on-device runtime and the Worker reproduce the cloud runtime's answers. A fidelity check, never a measure of model quality |
 | `list_notifications` | `mcp:read` | optional `unread_only`, `limit` | The credential's user's notifications in this account, newest first. Listing does not mark them seen |
 | `mark_notification_read` | `mcp:write` | `notification_id`, or `all: true` | Marks one notification, or all of them, read |
 
