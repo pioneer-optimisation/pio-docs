@@ -238,7 +238,7 @@ Most authoring applies in one call. Three edits change what live players get, so
 - `retire_choice`, always.
 
 1. Call without `confirm`. Nothing changes. The response shows the current values, the proposed change, the live models it reaches, and `expected_revision`.
-2. Call again with the same arguments, `confirm: true`, and that `expected_revision`. If the input or the requested change differs from the preview, the call refuses with `stale` and changes nothing.
+2. Call again with the same arguments, `confirm: true`, and that `expected_revision`. If the input, the requested change, or the set of live models differs from the preview, the call refuses with `stale` and changes nothing.
 
 Without `mcp:traffic`, these edits refuse with `traffic_scope_required`. A rename that only changes a reward's name, or an option's label, applies at once: options keep their stable ids, so the live model serves the same arms.
 
@@ -250,7 +250,7 @@ A confirmed change to a live champion's reward does not rewrite what it serves. 
 | --- | --- | --- |
 | `rename` | `name` | Renames the decision. The name must match the key the game registers |
 | `rename_choice` | `choice_id`, `label` | Renames an option. Its id never changes and old labels stay reserved |
-| `update_steering` | `choice_id`, optional `min_serve_prob`, `max_serve_prob`, `logit_prior` | Sets an option's traffic floor and cap (fractions from 0 to 1) and its prior (from -5 to 5) |
+| `update_steering` | `choice_id`, optional `min_serve_prob`, `max_serve_prob`, `logit_prior` | Sets an option's traffic floor and cap (fractions from 0 to 1) and its prior (from -5 to 5). Values you omit keep their current setting |
 | `update_mask_rule` | `choice_id`, `mask_rule` | Sets when an option is unavailable, for example `{"op": "lt", "input": "std_level_index", "value": 3}`. `null` clears it |
 
 `reset_measurement` follows the same pattern: the first call reports the tripped measurement's `epoch_id`, and the second call passes it as `expected_epoch_id`.
