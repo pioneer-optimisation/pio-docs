@@ -21,7 +21,7 @@ static PioOptions TunedOptions() => new PioOptions
 
 With `OfflineMode` on, initialisation is instant, every decision returns the registered fallback immediately (`Source = Fallback`), and events enqueue but never flush. `TrackingEnabled = false` takes precedence over offline mode. `PIO.IsOffline` reports the mode at runtime.
 
-Without it, the SDK degrades to the same place gracefully: an unreachable backend serves fallbacks and queues events until connectivity returns.
+Without it, the SDK degrades gracefully. A decision the device can serve [on device](/integration/decisions#where-decisions-run) keeps working without a connection once initialisation has succeeded. A decision that needs the cloud serves your fallback while the backend is unreachable. Events queue until connectivity returns.
 
 ## The event queue
 
@@ -33,4 +33,4 @@ A session starts at initialisation and rolls over after `SessionTimeoutMinutes` 
 
 ## Decision timing
 
-`DecisionTimeoutMs` (default 2000) is the per-decision budget before the fallback serves. Raise it for high-latency audiences; the trade is a longer worst-case wait at the decision point.
+`DecisionTimeoutMs` (default 2000) is the per-decision budget for a cloud-served decision before the fallback serves. On-device decisions make no network call. Raise it for high-latency audiences; the trade is a longer worst-case wait at the decision point.
