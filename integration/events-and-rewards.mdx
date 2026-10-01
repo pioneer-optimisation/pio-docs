@@ -30,7 +30,7 @@ The valued overload writes its number to the event's `event_value` field. Values
 
 The SDK measures foreground play time for you through the reserved `pio.heartbeat` event. It sends one on a flush once at least `HeartbeatIntervalSeconds` (default 30) of foreground time has built up.
 
-Each heartbeat's `event_value` is the foreground milliseconds since the previous heartbeat in the same session. It is an increment, not a running total, so a session's play time is the sum of its heartbeats. Paused and backgrounded time is excluded. The active-dwell reward rule and the play-time readouts sum these values.
+Each heartbeat's `event_value` is the foreground milliseconds since the previous heartbeat in the same session. It is an increment, not a running total, so a session's play time is the sum of its heartbeats. Paused and backgrounded time is excluded.
 
 Set `HeartbeatEnabled` to `false` in PioSettings to stop sending heartbeats.
 
