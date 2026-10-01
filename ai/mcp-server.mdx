@@ -111,7 +111,7 @@ Tool arguments use numeric ids. `whoami` lists the project ids; `create_project`
 | `register_event_type` | `mcp:write` | `project_id`, `key`, optional `name` and `description` | The registered event type. Reserved platform keys are refused |
 | `get_holdout_suggestion` | `mcp:read` | `project_id` | After a clear Benefit, the smallest share Baseline can shrink to at this traffic, with the values `shrink_baseline` needs; or why there is none |
 | `shrink_baseline` | `mcp:traffic` | `project_id`, `expected_epoch_id`, `share` | Shrinks Baseline to the suggested share, the same action as the Experiments tab. Starts a fresh measurement. Refuses if the measurement or the suggestion changed; every change is audited |
-| `go_live` | `mcp:traffic` | `project_id`, `model_id`, optional `share`, `rollback`, `confirm`, `expected_epoch_id` | A draft model's first live traffic, the same action as its go-live page. Without `confirm` it changes nothing and returns what the page shows. See below |
+| `go_live` | `mcp:traffic` | `project_id`, `model_id`, optional `share`, `rollback`, `rollback_was`, `confirm`, `expected_epoch_id` | A draft model's first live traffic, the same action as its go-live page. Without `confirm` it changes nothing and returns what the page shows. See below |
 
 Every tool response is a JSON document. When a tool cannot do what was asked it returns `error`, `message`, and `next_step`, so the agent can act on the failure rather than guess:
 
@@ -165,7 +165,7 @@ This is the tool the agent runs after each change. The `rungs` array is the same
 `go_live` is the go-live page for agents. It runs in two calls, so the agent acts on the same facts a person would see.
 
 1. Call it with `project_id` and `model_id` only. Nothing changes. The response carries the suggested share and why, the split across live models, the timeline, the safety checks, the rollback setting, the per-option caps, and `expected_epoch_id`. If the model is not ready, `blocker` says why.
-2. Call it again with `confirm: true`, the `share` you chose (5 to 50), and the `expected_epoch_id` from the first call. Pass `rollback` to change the project's automatic rollback; omit it to keep the current setting.
+2. Call it again with `confirm: true`, the `share` you chose (5 to 50), and the `expected_epoch_id` from the first call. To set the project's automatic rollback, pass `rollback` with `rollback_was` set to the preview's `rollback.now`. A setting someone changed since the preview is kept. Omit both to keep the current setting.
 
 ```json
 {
@@ -179,7 +179,7 @@ This is the tool the agent runs after each change. The `rungs` array is the same
   "guardrails": [{ "metric_id": "d7_retention", "label": "Still active after 7 days", "margin": "margin 3 pts", "status": "armed" }],
   "rollback": { "now": false, "after": false, "status": "Automatic rollback · off." },
   "expected_epoch_id": 412,
-  "next_step": "To start, call go_live again with confirm: true, share: 18, rollback: false and expected_epoch_id: 412."
+  "next_step": "To start, call go_live again with confirm: true, share: 18, rollback: false, rollback_was: false and expected_epoch_id: 412."
 }
 ```
 
@@ -190,7 +190,7 @@ The confirmed call runs the same checks as the page, and refuses with one of the
 - `locked`: the model is larger than the free plan covers.
 - `not_ready`: the model fails a readiness or fallback check; the message names it.
 - `stale`: traffic changed since the preview. Preview again.
-- `confirm_needs_preview`: `share` or `expected_epoch_id` is missing.
+- `confirm_needs_preview`: `share` or `expected_epoch_id` is missing, or `rollback` came without `rollback_was`.
 
 Every go-live is written to the audit log with the credential that made it. See [Going live](/dashboard/go-live) for how the share is chosen.
 
