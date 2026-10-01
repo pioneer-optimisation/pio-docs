@@ -106,7 +106,7 @@ Tool arguments use numeric ids. `whoami` lists the project ids; `create_project`
 | `check_integration` | `mcp:read` | `project_id` | Integration health: SDK liveness, event-type coverage, active users, the ladder of checks, and the next step |
 | `get_model_lifecycle` | `mcp:read` | `project_id`, optional `model_id` | Readiness and lifecycle phase per model, with the project's latest evaluation summary |
 | `get_experiment_evidence` | `mcp:read` | `project_id`, optional `metric_id` | The Experiments tab's results for the current measurement: the result for all models together, every model-vs-Baseline and model-vs-model comparison (verdict, range, evidence strength, whether it passes the multiplicity bar), the traffic-split check, and comparisons not yet available. See [Read results before moving traffic](#read-results-before-moving-traffic) |
-| `get_guardrails` | `mcp:read` | `project_id` | The "Do no harm" checks: per check, the worst verdict, its margin, and each model's row, with what automatic rollback did about a harm (watching, would have switched off, switched off, stood down). Also whether automatic rollback is on |
+| `get_guardrails` | `mcp:read` | `project_id` | The "Do no harm" checks: per check, the worst verdict, its margin, and each model's row, with what automatic rollback did about a harm (watching, would have switched off, switched off, stood down). Also whether automatic rollback is on, and `per_model_checks_dropped`: the models whose own checks didn't fit this update |
 | `get_forecasts` | `mcp:read` | `project_id`, optional `model_id` | The Performance tab's forecast accuracy per model: per forecast the verdict (accurate, slipping, inaccurate, improving, uncertain, checking), users scored against users needed, and the recent check with the date it went off or came back |
 | `create_project` | `mcp:write` | `name`, optional `store_platform`, `launch_stage`, `expected_mau_band` | The new project's id, pending a human attestation (see below) |
 | `get_api_key` | `mcp:write` | `project_id` | The project's API key and account id for `PioSettings`. Account admins only; every reveal is audited |
@@ -227,6 +227,7 @@ Every go-live is written to the audit log with the credential that made it. See 
 - `srm.tripped` means the traffic split did not match the configured weights, so no verdict can be trusted. `reset_measurement` starts a fresh one.
 - `ebh` on a comparison is `passes` or `does_not_pass` against the multiplicity bar that protects against a lucky pair among many. It is `null` when there are too few comparisons for the bar to apply, the same as the tab.
 - A guardrail row with `decision: "harm"` is a model making things worse on that check. Don't move traffic toward it.
+- `per_model_checks_dropped` in `get_guardrails` lists the models that have no checks of their own. With many models live, only the checks across all models combined fit each update. When it isn't empty, a pooled "all clear" says nothing about any one of those models, and automatic rollback can't switch a single model off. `shift_to_winner` refuses those models. Archive models you've finished with to turn per-model checks back on.
 
 ## Change models
 
