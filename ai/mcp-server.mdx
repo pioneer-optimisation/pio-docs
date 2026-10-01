@@ -223,6 +223,10 @@ Every go-live is written to the audit log with the credential that made it. See 
 `shrink_baseline`, `shift_to_winner` and `set_traffic_split` act on results. Read them first. `get_experiment_evidence` and `get_guardrails` return the same results the Experiments tab shows, and `get_forecasts` returns the Performance tab's forecast accuracy panel.
 
 - `measurement.superseded` is `true` when the traffic changed and a fresh measurement has not reported yet. Those rows are the last results from the previous measurement.
+- Every model in these results, and in `get_model_lifecycle` and `set_traffic_split`, carries `traffic_weight` and `serving_class`. Nothing is left out for being at 0%:
+  - `serving`: the model gets traffic now.
+  - `zero_with_evidence`: it is at 0% now, but the results shown still include it. The pages show it muted with a "0% now" tag.
+  - `not_receiving`: it is at 0% with nothing in these results. It may be a challenger waiting for `go_live`, a retired model, or one that never served. The pages leave it out of filters and lists of results.
 - `srm.tripped` means the traffic split did not match the configured weights, so no verdict can be trusted. `reset_measurement` starts a fresh one.
 - `ebh` on a comparison is `passes` or `does_not_pass` against the multiplicity bar that protects against a lucky pair among many. It is `null` when there are too few comparisons for the bar to apply, the same as the tab.
 - A guardrail row with `decision: "harm"` is a model making things worse on that check. Don't move traffic toward it.
@@ -235,7 +239,7 @@ Every go-live is written to the audit log with the credential that made it. See 
 1. Call without `confirm`. Nothing changes. The response shows the state now and after, and the values the second call needs: `expected_epoch_id`, or for `set_auto_rollback`, `enabled_now`.
 2. Call again with `confirm: true` and those values: `expected_epoch_id`, or `enabled_was` set to the preview's `enabled_now`. If traffic or the setting changed since the preview, the call refuses with `stale` and changes nothing.
 
-A model's first users always come through `go_live`: `set_traffic_split` refuses with `first_traffic` for a model that has never served. `get_model_lifecycle` lists each model's `traffic_weight`, `forked_from_id`, and `challenger_state`, which is what `promote_model` and `abandon_model` act on.
+A model's first users always come through `go_live`: `set_traffic_split` refuses with `first_traffic` for a model that has never served, and its rows mark such a model `requires_go_live: true`. `get_model_lifecycle` lists each model's `traffic_weight`, `forked_from_id`, and `challenger_state`, which is what `promote_model` and `abandon_model` act on.
 
 `fork_model` and `archive_model` never move traffic, so they need only `mcp:write` and run in one call. To archive a model that still gets users, set its weight to 0 with `set_traffic_split` first.
 
