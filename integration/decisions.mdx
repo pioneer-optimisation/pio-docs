@@ -35,6 +35,22 @@ switch (d?.Source)
 
 A `Fallback` decision arrives when the backend is unreachable, times out past `DecisionTimeoutMs`, or authentication has not succeeded. A `Baseline` decision means this player is in the control group: `Action` is null, and you show your control experience. The SDK records the arm on every decision either way. The call itself returns null only when tracking is disabled. Cancelling your own token rethrows `OperationCanceledException` rather than falling back.
 
+## Where decisions run
+
+Decisions run on the device whenever it can execute your model, and in the cloud when it cannot. There is no setting for this. After initialisation, the SDK downloads the current model and serves decisions locally, with no network round-trip. Any decision the device cannot serve goes to the cloud, which uses the same model, the same option limits and the same retirements.
+
+`Source` is `Worker` for both, because the model sampled the action either way. Your branching code does not change.
+
+A decision goes to the cloud when:
+
+- the model has not finished downloading yet, which is common for the first decisions after install
+- the platform has no on-device runtime, for example an x86 Android emulator
+- the downloaded model failed its integrity check
+- the model needs a newer SDK than the one in your build
+- the on-device run failed, in which case the same decision is retried in the cloud
+
+To see which path served a decision, set `EnableDebugLogging` on `PioConfig`. Each decision then logs a `decision routing` line naming the reason. A cloud-served decision costs a network round-trip and is bounded by `DecisionTimeoutMs`. That round-trip is the usual cause of a decision that is slower than expected.
+
 ## Payloads
 
 An action option can carry a payload: difficulty curves, copy, discount percentages, edited in the dashboard and delivered with the decision. The model still chooses among the same option keys; the payload is opaque to training. You retune numbers server-side with no client release and no retraining.
