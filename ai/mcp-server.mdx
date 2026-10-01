@@ -26,7 +26,7 @@ Scopes are the same for both:
 
 | Scope | Grants |
 | --- | --- |
-| `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle`, `get_project_inputs`, `list_model_templates`, `get_parity_report`, `list_notifications`, `get_holdout_suggestion`, `get_winner_suggestion` |
+| `mcp:read` | `whoami`, `get_project_status`, `check_integration`, `get_model_lifecycle`, `get_project_inputs`, `list_model_templates`, `get_parity_report`, `list_notifications`, `get_holdout_suggestion`, `get_winner_suggestion`, `get_experiment_evidence`, `get_guardrails`, `get_forecasts` |
 | `mcp:write` | `create_project`, `update_project`, `get_api_key`, `create_action_definition`, `update_action_definition`, `register_event_type`, `create_state_definition`, `update_state_definition`, `create_reward`, `update_reward`, `create_model_from_template`, `fork_model`, `archive_model`, and `mark_notification_read`, in addition to the read tools |
 | `mcp:traffic` | `go_live`, `set_traffic_split`, `set_auto_rollback`, `promote_model`, `abandon_model`, `shrink_baseline`, `shift_to_winner`, `retire_choice`, and `reset_measurement`. With `mcp:write`, it also lets `update_reward` and `update_action_definition` change what a live model uses. These change what live players get, so the scope is never granted by default: tick it explicitly when you issue the credential |
 
@@ -105,6 +105,9 @@ Tool arguments use numeric ids. `whoami` lists the project ids; `create_project`
 | `get_project_status` | `mcp:read` | `project_id` | The onboarding checklist: each step's state, completion time, and dashboard path, plus the next step |
 | `check_integration` | `mcp:read` | `project_id` | Integration health: SDK liveness, event-type coverage, active users, the ladder of checks, and the next step |
 | `get_model_lifecycle` | `mcp:read` | `project_id`, optional `model_id` | Readiness and lifecycle phase per model, with the project's latest evaluation summary |
+| `get_experiment_evidence` | `mcp:read` | `project_id`, optional `metric_id` | The Experiments tab's results for the current measurement: the result for all models together, every model-vs-Baseline and model-vs-model comparison (verdict, range, evidence strength, whether it passes the multiplicity bar), the traffic-split check, and comparisons not yet available. See [Read results before moving traffic](#read-results-before-moving-traffic) |
+| `get_guardrails` | `mcp:read` | `project_id` | The "Do no harm" checks: per check, the worst verdict, its margin, and each model's row, with what automatic rollback did about a harm (watching, would have switched off, switched off, stood down). Also whether automatic rollback is on |
+| `get_forecasts` | `mcp:read` | `project_id`, optional `model_id` | The Performance tab's forecast accuracy per model: per forecast the verdict (accurate, slipping, inaccurate, improving, uncertain, checking), users scored against users needed, and the recent check with the date it went off or came back |
 | `create_project` | `mcp:write` | `name`, optional `store_platform`, `launch_stage`, `expected_mau_band` | The new project's id, pending a human attestation (see below) |
 | `get_api_key` | `mcp:write` | `project_id` | The project's API key and account id for `PioSettings`. Account admins only; every reveal is audited |
 | `create_action_definition` | `mcp:write` | `project_id`, `name`, `actions`, `default_action` | The new categorical definition. The name must match the key registered in `PioConfig.Actions` |
@@ -215,6 +218,15 @@ The confirmed call runs the same checks as the page, and refuses with one of the
 - `confirm_needs_preview`: `share` or `expected_epoch_id` is missing, or `rollback` came without `rollback_was`.
 
 Every go-live is written to the audit log with the credential that made it. See [Going live](/dashboard/go-live) for how the share is chosen.
+
+### Read results before moving traffic
+
+`shrink_baseline`, `shift_to_winner` and `set_traffic_split` act on results. Read them first. `get_experiment_evidence` and `get_guardrails` return the same results the Experiments tab shows, and `get_forecasts` returns the Performance tab's forecast accuracy panel.
+
+- `measurement.superseded` is `true` when the traffic changed and a fresh measurement has not reported yet. Those rows are the last results from the previous measurement.
+- `srm.tripped` means the traffic split did not match the configured weights, so no verdict can be trusted. `reset_measurement` starts a fresh one.
+- `ebh` on a comparison is `passes` or `does_not_pass` against the multiplicity bar that protects against a lucky pair among many. It is `null` when there are too few comparisons for the bar to apply, the same as the tab.
+- A guardrail row with `decision: "harm"` is a model making things worse on that check. Don't move traffic toward it.
 
 ## Change models
 
