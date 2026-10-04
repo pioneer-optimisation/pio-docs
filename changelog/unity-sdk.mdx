@@ -46,11 +46,15 @@ These docs describe the latest release, v0.3.3. Pin an exact version, and read e
 
 </Update>
 
-<Update label="0.3.0" description="2026-07-26" tags={["Breaking changes","Features"]}>
+<Update label="0.3.0" description="2026-07-26" tags={["Breaking changes","Changes","Features"]}>
 
 ### Breaking changes
 
 - Remove TrackReward
+
+### Changes
+
+- Removed `PIO.TrackReward`; report outcomes with `PIO.TrackEvent(eventType, value)` so reward signals can be derived by the platform.
 
 ### Features
 

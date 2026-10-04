@@ -3,20 +3,34 @@ import { test } from "node:test";
 import { findings } from "./pin-lint.mjs";
 import { verdict, GRACE_HOURS } from "./sdk-version-check.mjs";
 
+const at = (iso, hours) => new Date(Date.parse(iso) + hours * 36e5);
+
 test("docs on the latest release pass", () => {
-    assert.equal(verdict({ claimed: "0.3.3", latest: "v0.3.3", publishedAt: "2026-10-03T21:14:11Z" }).ok, true);
+    const releases = [{ tag: "v0.3.2", publishedAt: "2026-07-28T00:00:00Z" }, { tag: "v0.3.3", publishedAt: "2026-10-03T21:14:11Z" }];
+    assert.equal(verdict({ claimed: "0.3.3", releases }).ok, true);
 });
 
 test("a newer release passes inside the sync window and fails after it", () => {
-    const publishedAt = "2026-10-03T00:00:00Z";
-    const inside = new Date(Date.parse(publishedAt) + (GRACE_HOURS - 1) * 36e5);
-    const after = new Date(Date.parse(publishedAt) + (GRACE_HOURS + 1) * 36e5);
-    assert.equal(verdict({ claimed: "0.3.3", latest: "v0.3.4", publishedAt, now: inside }).ok, true);
-    assert.equal(verdict({ claimed: "0.3.3", latest: "v0.3.4", publishedAt, now: after }).ok, false);
+    const releases = [{ tag: "v0.3.3", publishedAt: "2026-10-01T00:00:00Z" }, { tag: "v0.3.4", publishedAt: "2026-10-03T00:00:00Z" }];
+    assert.equal(verdict({ claimed: "0.3.3", releases, now: at("2026-10-03T00:00:00Z", GRACE_HOURS - 1) }).ok, true);
+    assert.equal(verdict({ claimed: "0.3.3", releases, now: at("2026-10-03T00:00:00Z", GRACE_HOURS + 1) }).ok, false);
 });
 
-test("claiming an unreleased version fails", () => {
-    assert.equal(verdict({ claimed: "0.4.0", latest: "v0.3.10", publishedAt: "2026-10-03T00:00:00Z" }).ok, false);
+test("a second release does not reset the window for docs already overdue", () => {
+    const releases = [
+        { tag: "v0.3.3", publishedAt: "2026-10-01T00:00:00Z" },
+        { tag: "v0.3.4", publishedAt: "2026-10-02T00:00:00Z" },
+        { tag: "v0.3.5", publishedAt: "2026-10-03T23:00:00Z" },
+    ];
+    const result = verdict({ claimed: "0.3.3", releases, now: at("2026-10-04T00:00:00Z", 0) });
+    assert.equal(result.ok, false);
+    assert.match(result.message, /v0\.3\.4 shipped 48\.0h ago \(latest v0\.3\.5\)/);
+});
+
+test("claiming an unreleased version fails, and semver orders numerically", () => {
+    const releases = [{ tag: "v0.3.9", publishedAt: "2026-10-01T00:00:00Z" }, { tag: "v0.3.10", publishedAt: "2026-10-02T00:00:00Z" }];
+    assert.equal(verdict({ claimed: "0.4.0", releases }).ok, false);
+    assert.equal(verdict({ claimed: "0.3.10", releases }).ok, true);
 });
 
 test("hand pins fail; generated regions and generated pages do not", () => {
@@ -28,4 +42,11 @@ test("hand pins fail; generated regions and generated pages do not", () => {
     assert.deepEqual(findings("page.mdx", region), []);
     const generated = '{/* Generated from pio-unity-sdk CHANGELOG.md (v0.3.3) by scripts/changelog-to-docs.mjs. Do not edit here. */}\n#v0.3.2\n';
     assert.deepEqual(findings("changelog.mdx", generated), []);
+});
+
+test("SDK versions typed in prose fail", () => {
+    for (const prose of ["Upgrade to v0.3.4 first.", "Needs SDK 0.3.4.", "Since version 0.3.4, events carry it."]) {
+        assert.deepEqual(findings("page.mdx", prose).map((h) => h.split(" ")[1]), ["[prose-pin]"], prose);
+    }
+    assert.deepEqual(findings("page.mdx", "Unity 2022.3 LTS, UniTask 2.5.11, vX.Y.Z."), []);
 });

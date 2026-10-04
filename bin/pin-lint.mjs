@@ -11,6 +11,7 @@ export const RULES = [
     { name: "private-repo", regex: /pio-unity-sdk\.git/g, hint: "studios install from the PIO registry; use the install-manifest snippet" },
     { name: "tag-pin", regex: /#v\d+\.\d+\.\d+/g, hint: "SDK versions come from the install-manifest snippet, never by hand" },
     { name: "manifest-pin", regex: /"com\.pioneeroptimisation\.sdk"\s*:\s*"/g, hint: "use {/* snippet:install-manifest */} instead of a hand-written manifest line" },
+    { name: "prose-pin", regex: /(?<![#\w])v\d+\.\d+\.\d+\b|\b(?:SDK|[Vv]ersion)\s+\d+\.\d+\.\d+\b/g, hint: "a typed SDK version goes stale; link the changelog or the install snippet instead" },
 ];
 
 const GENERATED = /\{\/\* Generated from pio-unity-sdk [^*]*Do not edit here\. \*\/\}/;

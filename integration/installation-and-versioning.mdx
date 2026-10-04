@@ -25,6 +25,18 @@ alwaysAuth = true
 EOF
 ```
 
+On Windows, in PowerShell:
+
+```powershell
+$key = [Convert]::ToBase64String([IO.File]::ReadAllBytes("pio-registry-key.json"))
+$auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("_json_key_base64:$key"))
+Add-Content -Encoding ascii -Path "$env:USERPROFILE\.upmconfig.toml" -Value @"
+[npmAuth."https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm"]
+_auth = "$auth"
+alwaysAuth = true
+"@
+```
+
 Build machines need the same file. Keep the key file and `.upmconfig.toml` out of version control.
 
 ## Install
