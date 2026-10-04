@@ -8,6 +8,7 @@
 # - the claim is the latest SDK release, with a 24h window for the sync PR;
 # - no SDK version or private git URL is typed by hand;
 # - plus the copy, page-inventory and link checks.
+# The docs-sync PR merges itself once these pass.
 name: docs-drift
 
 on:
@@ -111,3 +112,26 @@ jobs:
       - name: No broken links
         working-directory: pio-docs
         run: npx --yes mint@4.2.835 broken-links
+
+  # The docs-sync PR is generated content only, and the checks above are its
+  # whole review: merge it once they pass, pinned to the head they checked.
+  # Not a required check, so the job-level `if` skips nothing that gates.
+  automerge:
+    name: Merge the docs-sync PR
+    needs: drift
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.head_ref, 'bot/sdk-docs-sync-v')
+      && github.event.pull_request.user.login == 'pio-release-please[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --delete-branch --match-head-commit "$HEAD_SHA"
