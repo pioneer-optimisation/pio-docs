@@ -66,8 +66,7 @@
             "group": "Unity SDK",
             "pages": [
               "api-reference/index",
-              "changelog/unity-sdk",
-              "legal/sdk-licence"
+              "changelog/unity-sdk"
             ]
           }
         ]
