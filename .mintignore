@@ -5,3 +5,7 @@
 # Draft content
 drafts/
 *.draft.mdx
+
+# Tooling, not pages: the SDK release claim and the CI gates (ENG-1259)
+sdk-version.json
+bin/

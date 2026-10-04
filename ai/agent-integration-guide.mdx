@@ -3,7 +3,7 @@ title: "Agent integration guide"
 description: "The integration spec, written for a reader that executes it."
 ---
 
-<Note>The code on this page is extracted from a sample project that compiles against each SDK release. The guide cannot show code that does not build. Fence headers cite the sample source in the SDK repository; the pinned tag may not ship those files until the next release.</Note>
+<Note>The code on this page is extracted from a sample project that compiles against each SDK release. The guide cannot show code that does not build. Every snippet is regenerated from the release the install step pins, so the code matches the version you install.</Note>
 
 This is the executable path through these docs, written for a coding agent with a human on hand for the few steps only a human can do. Follow the steps in order. Each ends with a check that either passes or names the fix.
 
@@ -18,18 +18,31 @@ Two reading rules. Treat every account id and project id as an opaque string: re
 
 ## Step 1: install the SDK
 
-Add the SDK and its one dependency to `Packages/manifest.json`:
+The SDK installs from the private PIO package registry. Hand-off: registry credentials live in the user's `.upmconfig.toml`, outside the project. Ask your human to complete [Authenticate to the registry](/integration/installation-and-versioning#authenticate-to-the-registry) on this machine, then continue.
 
+Add the registry, the SDK and its one dependency to `Packages/manifest.json`:
+
+{/* snippet:install-manifest */}
 ```json Packages/manifest.json
 {
+  "scopedRegistries": [
+    {
+      "name": "PIO",
+      "url": "https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm",
+      "scopes": [
+        "com.pioneeroptimisation"
+      ]
+    }
+  ],
   "dependencies": {
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2.5.11",
-    "com.pioneeroptimisation.sdk": "https://github.com/pioneer-optimisation/pio-unity-sdk.git#v0.3.2"
+    "com.pioneeroptimisation.sdk": "0.3.3"
   }
 }
 ```
+{/* /snippet:install-manifest */}
 
-Merge these two lines into the existing `dependencies` block; every manifest edit in this guide is additive, and replacing the file would drop the project's built-in modules. The SDK is pre-1.0, so pin an exact tag, never a branch. [Installation & versioning](/integration/installation-and-versioning) carries the current tag and the upgrade rules.
+Merge these entries into the existing `scopedRegistries` and `dependencies` blocks; every manifest edit in this guide is additive, and replacing the file would drop the project's built-in modules. The SDK is pre-1.0, so pin the exact version shown, never a range. [Installation & versioning](/integration/installation-and-versioning) carries the upgrade rules.
 
 Check: the project compiles and `using PIO;` resolves. Without the Editor open, compile in batch mode, with `UNITY_EDITOR` set to the editor binary for the project's Unity version:
 
@@ -39,7 +52,7 @@ Check: the project compiles and `using PIO;` resolves. Without the Editor open, 
 
 Exit code 0 and no `error CS` lines in the log mean the install compiles.
 
-The log never confirms that the git packages resolved. Check that `Packages/packages-lock.json` locks both packages at the exact revisions the manifest pins; a failed or partial resolve can leave an older cached revision compiling, and still exits 0.
+The log never confirms that the packages resolved. Check that `Packages/packages-lock.json` locks `com.pioneeroptimisation.sdk` at the exact version the manifest pins, from the PIO registry, and UniTask at the pinned revision; a failed or partial resolve can leave an older cached version compiling, and still exits 0. A registry `401` in the log means the credential is missing or wrong: hand off to your human.
 
 On macOS the editor binary lives at `/Applications/Unity/Hub/Editor/<version>/Unity.app/Contents/MacOS/Unity`; export it as `UNITY_EDITOR` once and every later step reuses it.
 

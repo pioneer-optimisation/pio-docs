@@ -1,32 +1,66 @@
 ---
 title: "Installation & versioning"
-description: "Install the SDK via UPM and pin an exact release."
+description: "Install the SDK from the PIO package registry and pin an exact release."
 ---
 
 ## Requirements
 
 - Unity 2022.3 LTS or newer.
 - UniTask, the SDK's one dependency, resolved via Git URL or the OpenUPM registry.
+- A PIO registry key: a read-only key file for the PIO package registry. Ask your PIO contact for one.
+
+## Authenticate to the registry
+
+The SDK ships from a private UPM registry. Unity reads registry credentials from `.upmconfig.toml` in your user folder (`~/.upmconfig.toml` on macOS and Linux, `%USERPROFILE%\.upmconfig.toml` on Windows), never from the project.
+
+Encode the key file and append the credential, once per machine. On macOS or Linux:
+
+```bash
+KEY=$(base64 < pio-registry-key.json | tr -d '\n')
+AUTH=$(printf '_json_key_base64:%s' "$KEY" | base64 | tr -d '\n')
+cat >> ~/.upmconfig.toml <<EOF
+[npmAuth."https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm"]
+_auth = "$AUTH"
+alwaysAuth = true
+EOF
+```
+
+Build machines need the same file. Keep the key file and `.upmconfig.toml` out of version control.
 
 ## Install
 
-Add both packages to `Packages/manifest.json`, mirroring the SDK's own sample project:
+Add the registry and both packages to `Packages/manifest.json`, merging into the existing blocks:
 
-```json
+{/* snippet:install-manifest */}
+```json Packages/manifest.json
 {
+  "scopedRegistries": [
+    {
+      "name": "PIO",
+      "url": "https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm",
+      "scopes": [
+        "com.pioneeroptimisation"
+      ]
+    }
+  ],
   "dependencies": {
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2.5.11",
-    "com.pioneeroptimisation.sdk": "https://github.com/pioneer-optimisation/pio-unity-sdk.git#v0.3.2"
+    "com.pioneeroptimisation.sdk": "0.3.3"
   }
 }
 ```
+{/* /snippet:install-manifest */}
 
 Confirm the package compiles and `using PIO;` resolves. The `Samples` tab of the Package Manager offers the Basic Integration sample, a working reference for every guide page here.
 
-## Pin an exact tag
+## Pin an exact version
 
-The SDK is pre-1.0: minor releases may include source-breaking changes, and binary compatibility is not guaranteed. Always pin an exact tag, never a branch. From 1.0, semver applies and the public surface becomes the compatibility baseline.
+The SDK is pre-1.0: minor releases may include source-breaking changes, and binary compatibility is not guaranteed. Always pin an exact version, never a range. From 1.0, semver applies and the public surface becomes the compatibility baseline.
+
+## Which version these docs describe
+
+These docs describe the latest release only: the version in the manifest above. Pages, snippets and the [API reference](/api-reference) regenerate from each release as it ships. Before 1.0 there are no per-version copies of the docs. The [changelog](/changelog/unity-sdk) records every release since 0.1.0, with an upgrade note on each breaking minor release.
 
 ## Upgrading
 
-Read the release notes, bump the tag, and recompile. If a release changes your project's payload schema surface, the Editor warns about schema drift; regenerate code constants (`PIO/Generate Code Constants`) to clear it.
+Read the [changelog](/changelog/unity-sdk) entries between your version and the latest, bump the version, and recompile. If a release changes your project's payload schema surface, the Editor warns about schema drift; regenerate code constants (`PIO/Generate Code Constants`) to clear it.

@@ -22,7 +22,9 @@ Every page here is customer-facing PIO copy. The brand voice (Editorial Bone, Br
 
 - Code in quickstart and integration pages is extracted from the compiling sample in pio-unity-sdk via markers. Never hand-write a code block that claims to be SDK usage.
 - Do not document unreleased behaviour. Before the site launches (DNS cutover), under-construction stubs may sit in navigation; from launch, a page appears in navigation only when the surface it documents has shipped.
-- Tell integrators to pin an exact SDK tag; the SDK is pre-1.0.
+- Tell integrators to pin an exact SDK version; the SDK is pre-1.0.
+- Never type an SDK version or a pio-unity-sdk git URL. The install manifest is the generated `install-manifest` snippet, and studios install from the PIO UPM registry, not the private repository. `bin/pin-lint.mjs` fails on a hand pin.
+- Docs describe the latest SDK release only (README, "SDK versions"). Generated pages move with each release through the docs-sync PR; do not hand-edit them or `sdk-version.json`.
 
 ## CI & merge rules
 

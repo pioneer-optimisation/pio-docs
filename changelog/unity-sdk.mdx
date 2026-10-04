@@ -1,0 +1,140 @@
+---
+title: "Unity SDK changelog"
+description: "What changed in each Unity SDK release, newest first."
+rss: true
+---
+
+{/* Generated from pio-unity-sdk CHANGELOG.md (v0.3.3) by scripts/changelog-to-docs.mjs. Do not edit here. */}
+
+These docs describe the latest release, v0.3.3. Pin an exact version, and read every entry between your version and the latest before you upgrade. Before 1.0, a minor release may break source; its entry carries an upgrade note when it does.
+
+<Update label="0.3.3" description="2026-10-03" tags={["Features","Fixes"]}>
+
+### Features
+
+- Send and persist the server-minted user proof
+- Generate typed payload accessors and detect schema drift
+- Expose the chosen option's payload on DecisionResult
+- Stamp device fields on every event envelope
+- Stamp the install anchor on every client event
+- Apply the serving overlay on device
+- Local by default with a sampled parity probe
+
+### Fixes
+
+- Recover auth after a degraded init and re-wire decisions
+- Hand the package link.xml to the linker so SQLite survives stripping
+- Stop setting MaxConnectionsPerServer, which throws in players
+- Compile PioStateNative.m with objc exceptions enabled
+- Sync PioVersion, gate the drift, isolate harness queues
+
+</Update>
+
+<Update label="0.3.2" description="2026-07-28" tags={["Features"]}>
+
+### Features
+
+- Shadow decorator: run local, serve cloud, log divergence
+
+</Update>
+
+<Update label="0.3.1" description="2026-07-26" tags={["Features"]}>
+
+### Features
+
+- Stamp decision_source on decision events
+
+</Update>
+
+<Update label="0.3.0" description="2026-07-26" tags={["Breaking changes","Features"]}>
+
+### Breaking changes
+
+- Remove TrackReward
+
+### Features
+
+- Generate lifecycle-aware action IDs
+- Add RoutingDecisionSource + LocalDecisionSource + bundle cache
+- Handle cold-start fallback policy
+- Add numeric event values
+- Auto-mark editor and dev-build events as internal
+- Emit pause-aware dwell heartbeats
+- Remove TrackReward
+- Local kv record store with served_state echo
+- Pio-oxide P/Invoke bindings + UPM Plugins packaging
+- Vendor v0.2.12 natives + wire local routing at init
+- Honour child_directed by suppressing ATT and ad-id capture
+- Collect device_region for geo-country mismatch
+
+</Update>
+
+<Update label="0.2.2" description="2026-07-12" tags={["Features"]}>
+
+### Features
+
+- Add canonical pio.events.* helper surface
+
+</Update>
+
+<Update label="0.2.1" description="2026-07-12" tags={["Features"]}>
+
+### Features
+
+- Embed the Worker's served-state echo into decision events
+- Implement 9 missing baseline state collectors
+- Implement the 16 m2 baseline state fields
+
+</Update>
+
+<Update label="0.2.0" description="2026-07-10" tags={["Breaking changes","Features","Fixes"]}>
+
+### Breaking changes
+
+- Backend URLs move from /accounts/\{account_id\}/games/\{game_id\}/... to /accounts/\{account_id\}/projects/\{project_id\}/...; the studio config property PioSettings.GameId is renamed to ProjectId (existing PioSettings.asset values auto-migrate via [FormerlySerializedAs("GameId")]).
+
+### Features
+
+- Stamp contract_version and model_version into decision events
+- Rename SDK backend URLs to /projects/ and studio config to ProjectId
+
+### Fixes
+
+- Ship SQLite native libs for Android and iOS
+
+</Update>
+
+<Update label="0.1.0" description="2026-06-29" tags={["Features","Fixes"]}>
+
+### Features
+
+- Add in-game debug overlay (PioConfig.ShowDebugOverlay)
+- Add Roslyn analyser for TrackEvent/SetState key validation
+- Add POST /auth JWT exchange with retry and background refresh
+- Generate PioActions, schema diff, and focus auto-refresh
+- Add a PioSettings asset + zero-arg PIO.Init()
+- Add consent-driven tracking mode with CMP integration point
+- M8 decision api: getdecision, clouddecisionsource, event emission
+- Consolidate menus under PIO; restyle Decision Simulator
+- Drive Decision Simulator form from the model feature contract
+- Play-mode diagnostics windows (Inspector, Event Log, validator)
+- Polish PIO Inspector + Event Log UI
+- Setup wizard, verify integration and decision simulator
+- Unify SDK config on PioSettings across wizard, codegen, verify
+- Custom error reporter and PIO.OnError API
+- Add trackEvent, trackReward, setState and editor codegen
+- Disk-backed event pipeline with SQLite queue and flush worker
+- Add HTTPS connection warming before auth
+- Add PIO.Init API, state machine, ULID user_id persistence
+- Add offline/mock mode (PioOptions.OfflineMode)
+- Collapse PioEnvironment to Production + URL overrides
+- Add session lifecycle with ULID session_id and auto timeout
+- M4 state capture: collectors, registry, snapshot serialization
+
+### Fixes
+
+- Degrade to fallbacks on auth failure at init instead of failing
+- Close SQLite event queue before domain reload (Editor crash)
+- Rename processor_frequency → cpu_frequency, mono_used_mb → mono_used
+
+</Update>

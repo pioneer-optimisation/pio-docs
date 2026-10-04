@@ -1,15 +1,17 @@
-# Docs drift gate (ENG-1101): the local ratchets, run on a schedule.
+# Docs gates (ENG-1101, ENG-1259), on every PR and daily.
 #
-# The quickstart code cannot lie locally (snippets extract from the compiling
-# sample in pio-unity-sdk; the API reference regenerates from public-api.md),
-# but nothing re-ran those checks when the SDK moved. This does, daily.
-#
-# Deliberately no auto-PR: a red run means either the SDK or the docs is
-# wrong, and deciding which is the point of the check. GitHub-hosted, node
-# only: no Unity, no self-hosted runner dependency.
+# Docs follow SDK releases, not SDK main. sdk-version.json names the release
+# these docs describe; pio-unity-sdk docs-sync.yml opens a PR moving it (and
+# every generated page) to each new release. This workflow checks that:
+# - generated content (snippets, install manifest, API reference, changelog)
+#   matches the release the docs claim, so a hand edit or a half sync fails;
+# - the claim is the latest SDK release, with a 24h window for the sync PR;
+# - no SDK version or private git URL is typed by hand;
+# - plus the copy, page-inventory and link checks.
 name: docs-drift
 
 on:
+  pull_request:
   schedule:
     - cron: "0 6 * * *"
   workflow_dispatch:
@@ -17,9 +19,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: docs-drift-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   drift:
-    name: Drift against pio-unity-sdk main
+    name: Drift against the claimed SDK release
     # Stays GitHub-hosted: this repo is public, so hosted minutes are free,
     # while a Depot runner would bill them.
     runs-on: ubuntu-latest
@@ -36,27 +42,57 @@ jobs:
           owner: pioneer-optimisation
           repositories: pio-unity-sdk
 
+      # The generators live in pio-unity-sdk and render from a tag, so main's
+      # tooling is right for any release. A PR whose branch also exists in
+      # pio-unity-sdk is a coupled change: use that branch's tooling.
+      - name: Pick the SDK tooling ref
+        id: tooling
+        env:
+          GH_TOKEN: ${{ steps.sdk-token.outputs.token }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          ref=main
+          if [ -n "$HEAD_REF" ] && gh api "repos/pioneer-optimisation/pio-unity-sdk/branches/$(jq -rn --arg b "$HEAD_REF" '$b|@uri')" >/dev/null 2>&1; then
+            ref="$HEAD_REF"
+          fi
+          echo "SDK tooling ref: $ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: pio-docs
 
+      # Full history and tags: the generators read the claimed release tag.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: pioneer-optimisation/pio-unity-sdk
+          ref: ${{ steps.tooling.outputs.ref }}
           token: ${{ steps.sdk-token.outputs.token }}
+          fetch-depth: 0
+          filter: blob:none
           path: pio-unity-sdk
 
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: "22"
 
-      - name: Snippets match the SDK sample
-        working-directory: pio-unity-sdk
-        run: node scripts/extract-snippets.mjs --docs ../pio-docs --check
+      - name: Test the release gates
+        working-directory: pio-docs
+        run: node --test bin/release-gates.test.mjs
 
-      - name: API reference matches public-api.md
+      - name: Generated content matches the claimed SDK release
         working-directory: pio-unity-sdk
-        run: node scripts/sync-api-reference.mjs --docs ../pio-docs --check
+        run: node scripts/docs-sync.mjs --docs ../pio-docs --check
+
+      - name: Claimed release is the latest (24h sync window)
+        working-directory: pio-docs
+        env:
+          GH_TOKEN: ${{ steps.sdk-token.outputs.token }}
+        run: node bin/sdk-version-check.mjs
+
+      - name: No hand-written SDK pins
+        working-directory: pio-docs
+        run: node bin/pin-lint.mjs
 
       - name: Brand lint (baseline stays empty)
         working-directory: pio-docs

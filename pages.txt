@@ -4,6 +4,7 @@
 /ai/llms-txt
 /ai/mcp-server
 /api-reference
+/changelog/unity-sdk
 /concepts/action-spaces-and-payloads
 /concepts/how-pio-optimises
 /concepts/reward-design

@@ -65,7 +65,8 @@
           {
             "group": "Unity SDK",
             "pages": [
-              "api-reference/index"
+              "api-reference/index",
+              "changelog/unity-sdk"
             ]
           }
         ]
