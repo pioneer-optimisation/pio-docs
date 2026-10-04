@@ -7,41 +7,10 @@ description: "Install the SDK from the PIO package registry and pin an exact rel
 
 - Unity 2022.3 LTS or newer.
 - UniTask, the SDK's one dependency, resolved via Git URL or the OpenUPM registry.
-- A PIO registry key: a read-only key file for the PIO package registry. Ask your PIO contact for one.
-
-## Authenticate to the registry
-
-The SDK ships from a private UPM registry. Unity reads registry credentials from `.upmconfig.toml` in your user folder (`~/.upmconfig.toml` on macOS and Linux, `%USERPROFILE%\.upmconfig.toml` on Windows), never from the project.
-
-Encode the key file and append the credential, once per machine. On macOS or Linux:
-
-```bash
-KEY=$(base64 < pio-registry-key.json | tr -d '\n')
-AUTH=$(printf '_json_key_base64:%s' "$KEY" | base64 | tr -d '\n')
-cat >> ~/.upmconfig.toml <<EOF
-[npmAuth."https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm"]
-_auth = "$AUTH"
-alwaysAuth = true
-EOF
-```
-
-On Windows, in PowerShell:
-
-```powershell
-$key = [Convert]::ToBase64String([IO.File]::ReadAllBytes("pio-registry-key.json"))
-$auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("_json_key_base64:$key"))
-Add-Content -Encoding ascii -Path "$env:USERPROFILE\.upmconfig.toml" -Value @"
-[npmAuth."https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm"]
-_auth = "$auth"
-alwaysAuth = true
-"@
-```
-
-Build machines need the same file. Keep the key file and `.upmconfig.toml` out of version control.
 
 ## Install
 
-Add the registry and both packages to `Packages/manifest.json`, merging into the existing blocks:
+The PIO registry is public: no key or login is needed. Add the registry and both packages to `Packages/manifest.json`, merging into the existing blocks:
 
 {/* snippet:install-manifest */}
 ```json Packages/manifest.json
