@@ -10,7 +10,7 @@ description: "Install the SDK from the PIO package registry and pin an exact rel
 
 ## Install
 
-The PIO registry is public: no key or login is needed. If you added a PIO registry key to `.upmconfig.toml` before, delete that entry, because the registry refuses a revoked key. Add the registry and both packages to `Packages/manifest.json`, merging into the existing blocks:
+The PIO registry is public: no key or login is needed. Add the registry and both packages to `Packages/manifest.json`, merging into the existing blocks:
 
 {/* snippet:install-manifest */}
 ```json Packages/manifest.json
@@ -18,7 +18,7 @@ The PIO registry is public: no key or login is needed. If you added a PIO regist
   "scopedRegistries": [
     {
       "name": "PIO",
-      "url": "https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm",
+      "url": "https://packages.pioneeroptimisation.com",
       "scopes": [
         "com.pioneeroptimisation"
       ]
@@ -32,7 +32,17 @@ The PIO registry is public: no key or login is needed. If you added a PIO regist
 ```
 {/* /snippet:install-manifest */}
 
-Confirm the package compiles and `using PIO;` resolves. The `Samples` tab of the Package Manager offers the Basic Integration sample, a working reference for every guide page here.
+Install through the manifest as above, not by browsing the Package Manager window. Confirm the package compiles and `using PIO;` resolves. The `Samples` tab of the Package Manager offers the Basic Integration sample, a working reference for every guide page here.
+
+## Add package from tarball
+
+Use this when your build system cannot reach a scoped registry. Each release is also a `.tgz` file on the same host, at `https://packages.pioneeroptimisation.com/com.pioneeroptimisation.sdk/-/com.pioneeroptimisation.sdk-<version>.tgz`. Use the version from the manifest above.
+
+1. Download the file and keep it inside your project, for example in `Packages/Tarballs/`, so every machine resolves the same path.
+2. In the Package Manager window, choose **+** then **Add package from tarball**, and select the file. Unity writes a `file:` path to `Packages/manifest.json`.
+3. Add UniTask to `dependencies` as in the manifest above. Unity does not fetch it for a tarball install.
+
+Upgrading means downloading the next file and repeating step 2.
 
 ## Pin an exact version
 

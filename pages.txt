@@ -24,3 +24,4 @@
 /integration/installation-and-versioning
 /integration/offline-and-lifecycle
 /integration/state-and-context
+/legal/sdk-licence

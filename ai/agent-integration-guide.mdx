@@ -28,7 +28,7 @@ Add the registry, the SDK and its one dependency to `Packages/manifest.json`:
   "scopedRegistries": [
     {
       "name": "PIO",
-      "url": "https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm",
+      "url": "https://packages.pioneeroptimisation.com",
       "scopes": [
         "com.pioneeroptimisation"
       ]
@@ -52,7 +52,7 @@ Check: the project compiles and `using PIO;` resolves. Without the Editor open, 
 
 Exit code 0 and no `error CS` lines in the log mean the install compiles.
 
-The log never confirms that the packages resolved. Check `Packages/packages-lock.json`: it must lock `com.pioneeroptimisation.sdk` at the pinned version from the PIO registry, and UniTask at the pinned revision. A failed or partial resolve can leave an older cached version compiling, and still exits 0. A registry `401` or `403` in the log means the registry refused the request. Check the registry URL matches the snippet exactly, then check `.upmconfig.toml` in the user folder for an old PIO registry entry, which sends a stale credential. If neither explains it, hand off to your human.
+The log never confirms that the packages resolved. Check `Packages/packages-lock.json`: it must lock `com.pioneeroptimisation.sdk` at the pinned version from the PIO registry, and UniTask at the pinned revision. A failed or partial resolve can leave an older cached version compiling, and still exits 0. A registry `401`, `403` or `404` in the log means the registry refused the request. Check the registry URL matches the snippet exactly. If it does, hand off to your human.
 
 On macOS the editor binary lives at `/Applications/Unity/Hub/Editor/<version>/Unity.app/Contents/MacOS/Unity`; export it as `UNITY_EDITOR` once and every later step reuses it.
 
