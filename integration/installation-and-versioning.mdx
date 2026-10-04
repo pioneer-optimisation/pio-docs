@@ -10,7 +10,7 @@ description: "Install the SDK from the PIO package registry and pin an exact rel
 
 ## Install
 
-The PIO registry is public: no key or login is needed. Add the registry and both packages to `Packages/manifest.json`, merging into the existing blocks:
+The PIO registry is public: no key or login is needed. If you added a PIO registry key to `.upmconfig.toml` before, delete that entry, because the registry refuses a revoked key. Add the registry and both packages to `Packages/manifest.json`, merging into the existing blocks:
 
 {/* snippet:install-manifest */}
 ```json Packages/manifest.json
