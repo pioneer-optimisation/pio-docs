@@ -7,41 +7,10 @@ description: "Install the SDK from the PIO package registry and pin an exact rel
 
 - Unity 2022.3 LTS or newer.
 - UniTask, the SDK's one dependency, resolved via Git URL or the OpenUPM registry.
-- A PIO registry key: a read-only key file for the PIO package registry. Ask your PIO contact for one.
-
-## Authenticate to the registry
-
-The SDK ships from a private UPM registry. Unity reads registry credentials from `.upmconfig.toml` in your user folder (`~/.upmconfig.toml` on macOS and Linux, `%USERPROFILE%\.upmconfig.toml` on Windows), never from the project.
-
-Encode the key file and append the credential, once per machine. On macOS or Linux:
-
-```bash
-KEY=$(base64 < pio-registry-key.json | tr -d '\n')
-AUTH=$(printf '_json_key_base64:%s' "$KEY" | base64 | tr -d '\n')
-cat >> ~/.upmconfig.toml <<EOF
-[npmAuth."https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm"]
-_auth = "$AUTH"
-alwaysAuth = true
-EOF
-```
-
-On Windows, in PowerShell:
-
-```powershell
-$key = [Convert]::ToBase64String([IO.File]::ReadAllBytes("pio-registry-key.json"))
-$auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("_json_key_base64:$key"))
-Add-Content -Encoding ascii -Path "$env:USERPROFILE\.upmconfig.toml" -Value @"
-[npmAuth."https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm"]
-_auth = "$auth"
-alwaysAuth = true
-"@
-```
-
-Build machines need the same file. Keep the key file and `.upmconfig.toml` out of version control.
 
 ## Install
 
-Add the registry and both packages to `Packages/manifest.json`, merging into the existing blocks:
+The PIO registry is public: no key or login is needed. Add the registry and both packages to `Packages/manifest.json`, merging into the existing blocks:
 
 {/* snippet:install-manifest */}
 ```json Packages/manifest.json
@@ -49,7 +18,7 @@ Add the registry and both packages to `Packages/manifest.json`, merging into the
   "scopedRegistries": [
     {
       "name": "PIO",
-      "url": "https://us-central1-npm.pkg.dev/pioneer-optimisation/pio-packages-upm",
+      "url": "https://packages.pioneeroptimisation.com",
       "scopes": [
         "com.pioneeroptimisation"
       ]
@@ -63,7 +32,17 @@ Add the registry and both packages to `Packages/manifest.json`, merging into the
 ```
 {/* /snippet:install-manifest */}
 
-Confirm the package compiles and `using PIO;` resolves. The `Samples` tab of the Package Manager offers the Basic Integration sample, a working reference for every guide page here.
+Install through the manifest as above, not by browsing the Package Manager window. Confirm the package compiles and `using PIO;` resolves. The `Samples` tab of the Package Manager offers the Basic Integration sample, a working reference for every guide page here.
+
+## Add package from tarball
+
+Use this when your build system cannot reach a scoped registry. Each release is also a `.tgz` file on the same host, at `https://packages.pioneeroptimisation.com/com.pioneeroptimisation.sdk/-/com.pioneeroptimisation.sdk-<version>.tgz`. Use the version from the manifest above.
+
+1. Download the file and keep it inside your project, for example in `Packages/Tarballs/`, so every machine resolves the same path.
+2. In the Package Manager window, choose **+** then **Add package from tarball**, and select the file. Unity writes a `file:` path to `Packages/manifest.json`.
+3. Add UniTask to `dependencies` as in the manifest above. Unity does not fetch it for a tarball install.
+
+Upgrading means downloading the next file and repeating step 2.
 
 ## Pin an exact version
 
