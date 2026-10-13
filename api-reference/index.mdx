@@ -3,9 +3,9 @@ title: "Unity SDK reference"
 description: "Every public symbol in the PIO Unity SDK, generated from the SDK's canonical reference."
 ---
 
-{/* Generated from pio-unity-sdk Documentation~/public-api.md (v0.3.5) by scripts/sync-api-reference.mjs. Do not edit here. */}
+{/* Generated from pio-unity-sdk Documentation~/public-api.md (v0.3.6) by scripts/sync-api-reference.mjs. Do not edit here. */}
 
-<Note>Generated from the SDK's canonical reference at v0.3.5. Fixes belong in pio-unity-sdk, not here.</Note>
+<Note>Generated from the SDK's canonical reference at v0.3.6. Fixes belong in pio-unity-sdk, not here.</Note>
 
 This document catalogues every public symbol in the SDK. It is the V1 surface:
 the compatibility baseline for future versions.
@@ -325,6 +325,7 @@ architecture.
 | `WorkerTimeout` | `WORKER_TIMEOUT` | Worker did not respond within the decision timeout |
 | `WorkerServerError` | `WORKER_SERVER_ERROR` | Worker returned a 5xx |
 | `WorkerMalformedResponse` | `WORKER_MALFORMED_RESPONSE` | Worker response could not be parsed |
+| `ActionRetired` | `ACTION_RETIRED` | The action is retired in PIO; the fallback was served (once per action) |
 | `EventQueueFull` | `EVENT_QUEUE_FULL` | Queue hit its cap and evicted the oldest events |
 | `EventValidationFailed` | `EVENT_VALIDATION_FAILED` | An event was dropped for failing validation |
 | `IngestionFailedPermanently` | `INGESTION_FAILED_PERMANENTLY` | Events dropped after exhausting ingestion retries |
