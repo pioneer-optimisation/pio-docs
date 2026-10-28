@@ -4,9 +4,25 @@ description: "What changed in each Unity SDK release, newest first."
 rss: true
 ---
 
-{/* Generated from pio-unity-sdk CHANGELOG.md (v0.3.6) by scripts/changelog-to-docs.mjs. Do not edit here. */}
+{/* Generated from pio-unity-sdk CHANGELOG.md (v0.3.7) by scripts/changelog-to-docs.mjs. Do not edit here. */}
 
-These docs describe the latest release, v0.3.6. Pin an exact version, and read every entry between your version and the latest before you upgrade. Before 1.0, a minor release may break source; its entry carries an upgrade note when it does.
+These docs describe the latest release, v0.3.7. Pin an exact version, and read every entry between your version and the latest before you upgrade. Before 1.0, a minor release may break source; its entry carries an upgrade note when it does.
+
+<Update label="0.3.7" description="2026-10-28" tags={["Features","Fixes"]}>
+
+### Features
+
+- Validate options and name their units
+
+### Fixes
+
+- Parse decision responses into typed objects
+- Fetch the signing p12 with --out-file
+- Sign iOS via temp keychain and swap flaky Test Lab devices
+- Trust the apple wwdr g3 intermediate in the signing keychain
+- Gate local serving on contract schema, not contract semver major
+
+</Update>
 
 <Update label="0.3.6" description="2026-10-13" tags={["Features","Fixes"]}>
 

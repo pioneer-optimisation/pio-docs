@@ -36,7 +36,7 @@ Add the registry, the SDK and its one dependency to `Packages/manifest.json`:
   ],
   "dependencies": {
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask#2.5.11",
-    "com.pioneeroptimisation.sdk": "0.3.6"
+    "com.pioneeroptimisation.sdk": "0.3.7"
   }
 }
 ```
@@ -106,7 +106,6 @@ public class PioBootstrap : MonoBehaviour
         accountId = string.IsNullOrEmpty(accountId) ? Environment.GetEnvironmentVariable("PIO_ACCOUNT_ID") ?? "" : accountId;
         projectId = string.IsNullOrEmpty(projectId) ? Environment.GetEnvironmentVariable("PIO_PROJECT_ID") ?? "" : projectId;
 
-        // Surface every SDK error as a console line while integrating.
         OnError += e =>
             Debug.LogWarning($"[PIO] {e.Severity} {e.Code}: {e.Message}");
 
@@ -140,7 +139,6 @@ public class PioBootstrap : MonoBehaviour
         // A valued event: the value feeds reward derivation.
         TrackEvent("level_complete", 1.0);
 
-        // A bare occurrence, no value.
         TrackEvent("tutorial_complete");
     }
 
