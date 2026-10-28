@@ -22,7 +22,7 @@ if (this == null) return;
 switch (d?.Source)
 {
     case DecisionSource.Worker:     // model-sampled action
-    case DecisionSource.Fallback:   // backend unreachable: your registered fallback
+    case DecisionSource.Fallback:   // offline, no model or backend failure: your registered fallback
         Apply(d.Action);
         break;
     case DecisionSource.Baseline:   // control group: Action is null
