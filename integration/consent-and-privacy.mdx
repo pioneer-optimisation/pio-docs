@@ -10,8 +10,6 @@ PIO shows no consent UI. Your consent management platform owns the user-facing e
 // Consent-required regions: start silent and let your CMP decide.
 await PIO.Init(BuildConfig(), new PioOptions { TrackingEnabled = false });
 
-// When the CMP resolves, pass its answer: true opens the tap,
-// false keeps it shut.
 bool analyticsConsent = ResolveConsentFromCmp();
 await PIO.SetTrackingEnabled(analyticsConsent);
 ```
