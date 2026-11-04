@@ -11,7 +11,7 @@ static PioOptions TunedOptions() => new PioOptions
 {
     OfflineMode = false,         // true: instant init, fallback decisions, no network
     MaxEventQueueSize = 10000,   // oldest events evicted past the cap
-    FlushIntervalSeconds = 30f,  // background flush cadence
+    FlushIntervalSeconds = 30f,
     DecisionTimeoutMs = 2000,    // per-decision budget before the fallback serves
 };
 ```
