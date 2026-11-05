@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>pioneer-optimisation/pio-renovate-config",
+    "github>pioneer-optimisation/pio-renovate-config:mise"
+  ],
+  "packageRules": [
+    {
+      "description": "node is pinned twice: mise.toml for local runs and drift.yml's setup-node for CI. Grouping both managers puts the two pins in one PR so they cannot drift apart. Remove this once the shared preset's 'node runtime' group lands.",
+      "matchManagers": ["mise", "github-actions"],
+      "matchDepNames": ["node"],
+      "groupName": "node runtime",
+      "automerge": false,
+      "labels": ["dependencies", "manual-review"]
+    }
+  ]
+}
